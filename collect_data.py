@@ -4,6 +4,9 @@ import json
 from dotenv import load_dotenv
 from datetime import datetime
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
 
 load_dotenv(dotenv_path='key.env')
 
@@ -18,7 +21,7 @@ os.makedirs(download_folder, exist_ok=True)
 params = {
     "access-key": api_key,
     "keywords": "python",  # 검색 키워드 (예: 'python')
-    "count": 10,           # 한 번에 가져올 공고 수
+    "count": 5,           # 한 번에 가져올 공고 수
     "start": 1             # 시작 페이지
 }
 
@@ -57,55 +60,41 @@ def refine_job_data(data):
 
     return refined_data
 
-def crawling_job_info(url):
-    try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-
-        # HTML 파싱
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        content = {}
-        return content
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-        return {"description": "크롤링 실패", "address": "크롤링 실패"}
-
 def crawling_company_info(url):
-    try:
-        # HTTP request
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+    driver = webdriver.Chrome()
+    driver.get(url)
+    driver.minimize_window()
+    time.sleep(3)
 
-        # HTML 파싱
-        soup = BeautifulSoup(response.text, 'html.parser')
+    info_names = driver.find_elements(By.CLASS_NAME, 'company_summary_desc')
+    infos = driver.find_elements(By.CLASS_NAME, 'company_summary_tit')
 
-        content = {
-            "company_introduce": soup.select_one(".txt").get_text(strip=True) if soup.select_one(".txt") else "Couldn't find information",
-            "company_history": soup.select_one(".history_txt").get_text(strip=True) if soup.select_one(".history_txt") else "Couldn't find information"
-        }
-        return content
+    content = {}
+
+    if len(info_names) == len(infos):
+        for name, info in zip(info_names, infos):
+            key = name.text
+            value = info.text
+            content[key] = value
     
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-        return {"description": "크롤링 실패", "address": "크롤링 실패"}
-    
+    if len(info_names) == 0:
+        content["회사 정보"] = "정보 없음"
+
+    return content
+
 def merge_data(data):
     for i in data:
-        href = i["company_url"]
+        url = i["company_url"]
 
-        if href:
-            print(f"Fetching content from: {href}")
+        if url:
+            print(f"Fetching content from: {url}")
             # 크롤링 수행
-            content = crawling_company_info(href)
+            content = crawling_company_info(url)
             # 기존 데이터에 "content" 키 추가
             i["content"] = content
         else:
-            print("No href found for this job.")
-            i["content"] = {"description": "URL 없음", "address": "URL 없음"}
+            print("No url found for this job.")
+            i["content"] = {"회사 정보": "URL 없음"}
     
     return data
 
