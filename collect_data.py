@@ -6,6 +6,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import time
 
 load_dotenv(dotenv_path='key.env')
@@ -61,9 +62,12 @@ def refine_job_data(data):
     return refined_data
 
 def crawling_company_info(url):
-    driver = webdriver.Chrome()
+
+    options = Options()
+    options.add_experimental_option("debuggerAddress", "localhost:9222")
+
+    driver = webdriver.Chrome(options=options)
     driver.get(url)
-    driver.minimize_window()
     time.sleep(3)
 
     info_names = driver.find_elements(By.CLASS_NAME, 'company_summary_desc')
@@ -72,7 +76,9 @@ def crawling_company_info(url):
     content = {}
 
     if len(info_names) == len(infos):
-        for name, info in zip(info_names, infos):
+        content['설립 일자'] = info_names[0]
+        content['연차'] = infos[0]
+        for name, info in zip(info_names[1:], infos[1:]):
             key = name.text
             value = info.text
             content[key] = value
