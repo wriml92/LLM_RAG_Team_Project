@@ -12,27 +12,26 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # OpenAI API 키 설정
 openai.api_key = OPENAI_API_KEY
 
+# 이미지 파일 경로
+image_path = "img/image.png"
+
 # Streamlit 애플리케이션 구성
 def main():
     # Streamlit 설정
     st.set_page_config(
         page_title="JobGPT - AI 커리어 도우미",
-        page_icon="image.png",
+        page_icon=image_path,
         layout="centered",
         initial_sidebar_state="expanded"
     )
 
-    # 메인 화면 로고 및 제목
-    st.markdown("""
-    <style>
-        .center-image {
-            text-align: center;
-        }
-    </style>
-    <div class='center-image'>
-        <img src="image.png" alt="당신의 AI 커리어 도우미">
-    </div>
-    """, unsafe_allow_html=True)
+    # 메인 화면 로고 이미지
+    if os.path.exists(image_path):
+        st.image(image_path, use_column_width=False, caption="당신의 AI 커리어 도우미")
+    else:
+        st.error("이미지 파일을 찾을 수 없습니다. '{}' 경로를 확인하세요.".format(image_path))
+
+    # 메인 화면 제목
     st.title("JobGPT에 오신 것을 환영합니다.")
     st.markdown("""
     JobGPT는 취업과 경력 개발을 지원하는 AI 기반 챗봇입니다.  
