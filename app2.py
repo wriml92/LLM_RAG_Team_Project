@@ -2,6 +2,8 @@ from dotenv import load_dotenv
 import os
 import openai
 import streamlit as st
+import copy
+from datetime import datetime
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -75,8 +77,12 @@ def main():
 
     # 현재 대화를 저장하기 위한 버튼
     if st.button("현재 대화 저장"):
-        st.session_state["saved_sessions"].append(st.session_state["messages"])
+        # 세션 저장
+        st.session_state["saved_sessions"].append(copy.deepcopy(st.session_state["messages"]))
         st.success("현재 대화가 저장되었습니다!")
+
+        # 대화 내용을 텍스트 파일로 저장
+        save_chat_to_file(st.session_state["messages"])
 
     # 사용자와 JobGPT 메시지 스타일
     user_message = """
@@ -137,6 +143,24 @@ def get_openai_response(user_input):
         return f"OpenAI API에서 오류가 발생했습니다: {str(e)}"
     except Exception as e:
         return "오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요."
+
+# 대화 내용을 파일로 저장하는 함수
+def save_chat_to_file(messages):
+    try:
+        # 파일명에 저장 시간을 추가하여 고유하게 만듦
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"chat_history_{timestamp}.txt"
+
+        # 메시지들을 파일에 저장
+        with open(filename, "w", encoding="utf-8") as file:
+            for msg in messages:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                content = msg["content"]
+                file.write(f"{role}: {content}\n")
+
+        st.success(f"채팅 내용이 {filename}에 저장되었습니다.")
+    except Exception as e:
+        st.error(f"채팅 내용을 저장하는 중 오류가 발생했습니다: {str(e)}")
 
 # Streamlit 앱 실행
 if __name__ == "__main__":
