@@ -28,11 +28,8 @@ def main():
     )
 
     # 메인 화면 로고 이미지
-    if os.path.exists(logo_image_path):
-        st.logo(logo_image_path)
-    else:
-        st.error("이미지 파일을 찾을 수 없습니다. '{}' 경로를 확인하세요.".format(image_path))
-
+    st.logo(logo_image_path)
+ 
     # 메인 화면 제목
     st.title("JobGPT에 오신 것을 환영합니다.")
     st.markdown("""
