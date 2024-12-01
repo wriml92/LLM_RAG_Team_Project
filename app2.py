@@ -4,6 +4,7 @@ import openai
 import streamlit as st
 import copy
 from datetime import datetime
+from openai import OpenAIError
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -99,11 +100,11 @@ def get_openai_response(user_input):
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=messages,
-            max_tokens=300,
+            max_tokens=1000, # 최대 토큰 길이 300자에서 1000자로 수정
             temperature=0.7
         )
         return response["choices"][0]["message"]["content"].strip()
-    except openai.error.OpenAIError as e:
+    except openai.OpenAIError as e: # 예외 처리 수정
         return f"OpenAI API에서 오류가 발생했습니다: {str(e)}"
     except Exception as e:
         return "오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요."
