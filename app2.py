@@ -13,21 +13,23 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
 # 이미지 파일 경로
-image_path = "static/image/image.png"
+logo_image_path = "image/logo_image.png"
+user_avatar = "image/logo_image.png"
+assistant_avatar = "image/logo_image.png"
 
 # Streamlit 애플리케이션 구성
 def main():
     # Streamlit 설정
     st.set_page_config(
         page_title="JobGPT - AI 커리어 도우미",
-        page_icon=image_path,
+        page_icon=logo_image_path,
         layout="centered",
         initial_sidebar_state="expanded"
     )
 
     # 메인 화면 로고 이미지
-    if os.path.exists(image_path):
-        st.logo(image_path)
+    if os.path.exists(logo_image_path):
+        st.logo(logo_image_path)
     else:
         st.error("이미지 파일을 찾을 수 없습니다. '{}' 경로를 확인하세요.".format(image_path))
 
@@ -82,47 +84,14 @@ def main():
         # 대화 내용을 텍스트 파일로 저장
         save_chat_to_file(st.session_state["messages"])
 
-    # 사용자와 JobGPT 메시지 스타일
-    user_message = """
-    <div style="
-    background-color: #26a6f0;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    max-width: 60%;
-    margin-left: auto;
-    ">
-        <img src="image.png" style="border-radius: 50%; margin-left: 10px;" alt="User Avatar">
-        {message}
-    </div>
-    """
-    assistant_message = """
-    <div style="
-    background-color: #f1f1f1;
-    color: black;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    width: 60%;
-    margin-right: auto;
-    ">
-        <img src="image.png" style="border-radius: 50%; margin-right: 10px;" alt="Bot Avatar">
-        {message}
-    </div>
-    """
-
     # 채팅 인터페이스
     for msg in st.session_state["messages"]:
         if msg["role"] == "user":
-            st.markdown(user_message.format(message=msg["content"]), unsafe_allow_html=True)
+            with st.chat_message("user", avatar=user_avatar):
+                st.markdown(msg["content"])
         else:
-            st.markdown(assistant_message.format(message=msg["content"]), unsafe_allow_html=True)
+            with st.chat_message("assistant", avatar=assistant_avatar):
+                st.markdown(msg["content"])
 
 # OpenAI GPT-4o API를 호출하여 사용자의 질문에 대한 응답을 생성하는 함수
 def get_openai_response(user_input):
