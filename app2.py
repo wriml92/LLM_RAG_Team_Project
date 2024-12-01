@@ -13,7 +13,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
 # 이미지 파일 경로
-image_path = "img/image.png"
+image_path = "static/image/image.png"
 
 # Streamlit 애플리케이션 구성
 def main():
@@ -27,7 +27,7 @@ def main():
 
     # 메인 화면 로고 이미지
     if os.path.exists(image_path):
-        st.image(image_path, use_column_width=False, caption="당신의 AI 커리어 도우미")
+        st.logo(image_path)
     else:
         st.error("이미지 파일을 찾을 수 없습니다. '{}' 경로를 확인하세요.".format(image_path))
 
@@ -60,15 +60,14 @@ def main():
         st.markdown("📩 **Contact us:** wriml92@knou.ac.kr")
 
     # 사용자 입력 섹션
-    user_input = st.text_input("메세지를 입력해 주십시오.", key="user_input")
-    send_button = st.button("Send")
+    user_input = st.chat_input("메세지를 입력해 주십시오.")
 
     # 메시지 처리
-    if send_button and user_input:
+    if user_input:
         # 사용자 메시지를 세션 상태에 추가
         st.session_state["messages"].append({"role": "user", "content": user_input})
 
-        # OpenAI GPT-4 모델에 메시지를 보내기
+        # OpenAI GPT-4o 모델에 메시지를 보내기
         bot_response = get_openai_response(user_input)
 
         # JobGPT 응답을 세션 상태에 추가
@@ -125,14 +124,14 @@ def main():
         else:
             st.markdown(assistant_message.format(message=msg["content"]), unsafe_allow_html=True)
 
-# OpenAI GPT-4 API를 호출하여 사용자의 질문에 대한 응답을 생성하는 함수
+# OpenAI GPT-4o API를 호출하여 사용자의 질문에 대한 응답을 생성하는 함수
 def get_openai_response(user_input):
     try:
         messages = [{"role": "system", "content": "You are a helpful assistant specialized in job searching and career advice."}]
         messages += st.session_state["messages"]
 
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=messages,
             max_tokens=300,
             temperature=0.7
