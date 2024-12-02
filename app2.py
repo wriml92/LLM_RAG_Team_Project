@@ -67,6 +67,12 @@ def main():
         st.session_state['selected_language'] = selected_language
 
         st.markdown("---")
+        st.subheader("🔑 OpenAI API 키 입력")
+        api_key_input = st.text_input("OpenAI API 키를 입력하세요", type="password")
+        if api_key_input:
+            st.session_state["OPENAI_API_KEY"] = api_key_input
+            st.success("API 키가 설정되었습니다.")
+        
         st.subheader("🆔 세션 ID 입력")
         session_id_input = st.text_input("세션 ID를 입력하세요")
         if session_id_input:
@@ -88,12 +94,6 @@ def main():
                             st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
                 else:
                     st.info(f"세션 ID '{session_id_input}'로 저장된 채팅 내용이 없습니다.")
-
-        st.subheader("🔑 OpenAI API 키 입력")
-        api_key_input = st.text_input("OpenAI API 키를 입력하세요", type="password")
-        if api_key_input:
-            st.session_state["OPENAI_API_KEY"] = api_key_input
-            st.success("API 키가 설정되었습니다.")
 
         st.markdown("---")
         st.subheader("📂 채팅 txt 파일 불러오기")
