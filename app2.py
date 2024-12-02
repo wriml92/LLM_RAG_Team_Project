@@ -57,6 +57,21 @@ def main():
                 st.session_state["messages"] = saved_sessions[selected_session]
 
         st.markdown("---")
+        st.markdown("### 채팅 txt 파일 불러오기")
+
+        # 파일 업로더 추가
+        uploaded_file = st.file_uploader("채팅 txt 파일을 선택하세요", type="txt")
+
+        # 파일이 업로드되면 처리
+        if uploaded_file is not None:
+            loaded_messages = load_chat_from_file(uploaded_file)
+            if loaded_messages:
+                st.session_state["messages"] = loaded_messages
+                st.success("채팅 내용을 성공적으로 불러왔습니다.")
+            else:
+                st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
+
+        st.markdown("---")
         st.markdown("📩 **Contact us:** wriml92@knou.ac.kr")
 
     # 사용자 입력 섹션
@@ -126,6 +141,27 @@ def save_chat_to_file(messages):
         st.success(f"채팅 내용이 {filename}에 저장되었습니다.")
     except Exception as e:
         st.error(f"채팅 내용을 저장하는 중 오류가 발생했습니다: {str(e)}")
+
+def load_chat_from_file(file):
+    try:
+        messages = []
+        # 파일 내용을 읽어서 디코딩
+        content = file.read().decode("utf-8")
+        lines = content.strip().split("\n")
+        for line in lines:
+            if line.startswith("User: "):
+                message_content = line[len("User: "):]
+                messages.append({"role": "user", "content": message_content})
+            elif line.startswith("Assistant: "):
+                message_content = line[len("Assistant: "):]
+                messages.append({"role": "assistant", "content": message_content})
+            else:
+                # 인식할 수 없는 형식의 라인 처리 (필요에 따라 수정 가능)
+                continue
+        return messages
+    except Exception as e:
+        st.error(f"채팅 내용을 불러오는 중 오류가 발생했습니다: {str(e)}")
+        return None
 
 # Streamlit 앱 실행
 if __name__ == "__main__":
