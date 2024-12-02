@@ -11,7 +11,7 @@ from fake_useragent import UserAgent
 import random
 import time
 
-load_dotenv(dotenv_path='.env')
+load_dotenv(dotenv_path='key.env')
 
 # 사람인 API 정보
 api_key = os.getenv("API_KEY") # 발급받은 API 키를 여기에 입력하세요
@@ -24,7 +24,7 @@ os.makedirs(download_folder, exist_ok=True)
 params = {
     "access-key": api_key,
     "keywords": "python",  # 검색 키워드 (예: 'python')
-    "count": 10,           # 한 번에 가져올 공고 수
+    "count": 100,           # 한 번에 가져올 공고 수
     "start": 1             # 시작 페이지
 }
 
