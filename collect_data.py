@@ -7,6 +7,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from fake_useragent import UserAgent
+import random
 import time
 
 load_dotenv(dotenv_path='.env')
@@ -62,34 +64,51 @@ def refine_job_data(data):
     return refined_data
 
 def crawling_company_info(url):
-    chromedriver_path = "/opt/homebrew/bin/chromedriver"  # ChromeDriver 경로
+    '''
+    셀레니움으로 company_url을 통해 회사정보를 크롤링하는 함수, driver가 실행이 안될 시, 
+
+    chromedriver_path = "chromedriver의 위치 경로"
     service = Service(chromedriver_path)
 
-    options = Options()
     driver = webdriver.Chrome(service=service, options=options)
 
-    driver.get(url)
-    time.sleep(3)
+    위와 같이 코드 변형 후 실행 시 오류 해결 가능성 있음.
+    '''
+    user_agent = UserAgent().random # 랜덤 유저에이전트 설정
+    options = Options()
+    options.add_argument(f'user-agent={user_agent}')
 
-    # WebElement를 수집
-    info_names = driver.find_elements(By.CLASS_NAME, 'company_summary_desc')
-    infos = driver.find_elements(By.CLASS_NAME, 'company_summary_tit')
+    driver = webdriver.Chrome(options=options)
 
-    content = {}
+    try:
+        driver.get(url)
 
-    # WebElement 객체의 text 속성만 추출
-    if len(info_names) == len(infos):
-        content['설립 일자'] = info_names[0].text if len(info_names) > 0 else "정보 없음"
-        content['연차'] = infos[0].text if len(infos) > 0 else "정보 없음"
-        for name, info in zip(info_names[1:], infos[1:]):
-            key = name.text
-            value = info.text
-            content[key] = value
+        time.sleep(random.uniform(2, 5))    # 요청 후 랜덤 시간 (2~5초) 대기
 
-    if len(info_names) == 0:
-        content["회사 정보"] = "정보 없음"
+        # WebElement를 수집
+        info_names = driver.find_elements(By.CLASS_NAME, 'company_summary_desc')
+        infos = driver.find_elements(By.CLASS_NAME, 'company_summary_tit')
 
-    driver.quit()  # ChromeDriver 종료
+        content = {}
+
+        # WebElement 객체의 text 속성만 추출
+        if len(info_names) == len(infos):
+            content['설립 일자'] = info_names[0].text if len(info_names) > 0 else "정보 없음"
+            content['연차'] = infos[0].text if len(infos) > 0 else "정보 없음"
+            for name, info in zip(info_names[1:], infos[1:]):
+                key = name.text
+                value = info.text
+                content[key] = value
+
+        if len(info_names) == 0:
+            content["회사 정보"] = "정보 없음"
+
+    except Exception as e:
+        print(f"Error occurred while fetching URL: {url}, {e}")
+        content = {"회사 정보": "크롤링 실패"}
+    finally:
+        driver.quit()  # ChromeDriver 종료
+
     return content
 
 def merge_data(data):
@@ -112,8 +131,9 @@ def merge_data(data):
 refined_data = refine_job_data(data)
 merged_data = merge_data(refined_data)
 
-file_path = './jobdata/data.json'
+current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+file_name = f'data_{current_time}.json'
+file_path = os.path.join(download_folder, file_name)
+
 with open(file_path, 'w', encoding="utf-8") as file:
     json.dump(merged_data, file, ensure_ascii=False, indent=4)
-
-print(data)  # API 호출 결과 출력
