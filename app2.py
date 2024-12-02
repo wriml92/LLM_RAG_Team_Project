@@ -53,7 +53,9 @@ def main():
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
     if "saved_sessions" not in st.session_state:
-        st.session_state["saved_sessions"] = []
+        st.session_state["saved_sessions"] = {}
+    if "session_id" not in st.session_state:
+        st.session_state["session_id"] = ""
 
     # 사이드바: 이전 채팅 세션을 불러오기 위한 인터페이스
     with st.sidebar:
@@ -65,6 +67,28 @@ def main():
         st.session_state['selected_language'] = selected_language
 
         st.markdown("---")
+        st.subheader("🆔 세션 ID 입력")
+        session_id_input = st.text_input("세션 ID를 입력하세요")
+        if session_id_input:
+            st.session_state["session_id"] = session_id_input
+            st.success(f"세션 ID가 설정되었습니다: {session_id_input}")
+            if session_id_input in st.session_state["saved_sessions"]:
+                st.session_state["messages"] = copy.deepcopy(st.session_state["saved_sessions"][session_id_input])
+                st.success(f"세션 ID '{session_id_input}'로 저장된 채팅 내용을 불러왔습니다.")
+            else:
+                # 파일에서 불러오기 시도
+                filename = f"chat_history_{session_id_input}.txt"
+                if os.path.exists(filename):
+                    with open(filename, "r", encoding="utf-8") as file:
+                        loaded_messages = load_chat_from_file(file)
+                        if loaded_messages:
+                            st.session_state["messages"] = loaded_messages
+                            st.success(f"세션 ID '{session_id_input}'로 저장된 채팅 내용을 파일에서 불러왔습니다.")
+                        else:
+                            st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
+                else:
+                    st.info(f"세션 ID '{session_id_input}'로 저장된 채팅 내용이 없습니다.")
+
         st.subheader("🔑 OpenAI API 키 입력")
         api_key_input = st.text_input("OpenAI API 키를 입력하세요", type="password")
         if api_key_input:
@@ -112,12 +136,12 @@ def main():
 
     # 현재 대화를 저장하기 위한 버튼
     if st.button("현재 대화 저장"):
-        # 세션 저장
-        st.session_state["saved_sessions"].append(copy.deepcopy(st.session_state["messages"]))
-        st.success("현재 대화가 저장되었습니다!")
-
-        # 대화 내용을 텍스트 파일로 저장
-        save_chat_to_file(st.session_state["messages"])
+        if st.session_state.get("session_id"):
+            st.session_state["saved_sessions"][st.session_state["session_id"]] = copy.deepcopy(st.session_state["messages"])
+            st.success(f"세션 ID '{st.session_state['session_id']}'로 현재 대화가 저장되었습니다!")
+            save_chat_to_file(st.session_state["messages"], st.session_state["session_id"])
+        else:
+            st.error("세션 ID를 입력하세요.")
 
     # 채팅 인터페이스
     for msg in st.session_state["messages"]:
@@ -190,13 +214,14 @@ def get_openai_response(user_input):
         return "오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요."
 
 # 대화 내용을 파일로 저장하는 함수
-def save_chat_to_file(messages):
+def save_chat_to_file(messages, session_id=None):
     try:
-        # 파일명에 저장 시간을 추가하여 고유하게 만듦
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"chat_history_{timestamp}.txt"
+        if session_id:
+            filename = f"chat_history_{session_id}.txt"
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"chat_history_{timestamp}.txt"
 
-        # 메시지들을 파일에 저장
         with open(filename, "w", encoding="utf-8") as file:
             for msg in messages:
                 role = "User" if msg["role"] == "user" else "Assistant"
@@ -210,8 +235,7 @@ def save_chat_to_file(messages):
 def load_chat_from_file(file):
     try:
         messages = []
-        # 파일 내용을 읽어서 디코딩
-        content = file.read().decode("utf-8")
+        content = file.read()
         lines = content.strip().split("\n")
         for line in lines:
             if line.startswith("User: "):
@@ -221,7 +245,6 @@ def load_chat_from_file(file):
                 message_content = line[len("Assistant: "):]
                 messages.append({"role": "assistant", "content": message_content})
             else:
-                # 인식할 수 없는 형식의 라인 처리 (필요에 따라 수정 가능)
                 continue
         return messages
     except Exception as e:
