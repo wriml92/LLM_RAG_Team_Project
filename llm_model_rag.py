@@ -18,10 +18,21 @@ from langchain_huggingface import HuggingFaceEmbeddings
 load_dotenv(dotenv_path='key.env')
 api_key = os.getenv("OPENAI_API_KEY")
 
-def load_job_data(job):
+def load_job_data(folder_path):
     '''job이라는 json 파일의 내용을 기본 문서인 document로 변형'''
     data = []
-    for info in job:
+    for file in os.listdir(folder_path):
+        if file.endswith(".json"):
+            file_path = os.path.join(folder_path, file)
+            # json파일 불러오기.
+            with open(file_path, "r", encoding="utf-8") as file:
+                job_data = json.load(file)
+                if isinstance(job_data, list):
+                    data.extend(job_data)
+
+    data_2 = []
+
+    for info in data:
         company_info = "\n".join([f"{key}: {value}" for key, value in info["content"].items()])
         
         content = f"""
@@ -40,28 +51,28 @@ def load_job_data(job):
         Company Info: {company_info}
         """
         doc = Document(page_content=content.strip())
-        data.append(doc)
-    return data
+        data_2.append(doc)
+    return data_2
 
-# json파일 불러오기.
-with open("jobdata/data.json", "r", encoding="utf-8") as file:
-    job_data = json.load(file)
+data = load_job_data('jobdata')
 
-# json파일 documnet 형태로 변형.
-data = load_job_data(job_data)
+def create_retriever(data):
+    '''텍스트 정보 청킹 후에 임베딩 생성, 저장 공간인 faiss vector DB와 이를 활용해 검색기 생성.'''
+    # document chunking
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    split_documents = text_splitter.split_documents(data)
 
-# document chunking
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-split_documents = text_splitter.split_documents(data)
+    # 임베딩 생성 및 벡터 DB 생성, 저장
+    # embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    # BM25, hybrid search을 활용하여 성능 개선 가능.
+    vectorstore = FAISS.from_documents(documents=split_documents, embedding=embeddings)
 
-# 임베딩 생성 및 벡터 DB 생성, 저장
-# embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-# BM25, hybrid search을 활용하여 성능 개선 가능.
-vectorstore = FAISS.from_documents(documents=split_documents, embedding=embeddings)
+    # 리트리버(검색기) 생성. 문서의 정보 검색 및 생성
+    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+    return retriever, embeddings, vectorstore
 
-# 리트리버(검색기) 생성. 문서의 정보 검색 및 생성
-retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+retriever, embeddings, vectorstore = create_retriever(data)
 
 # 프롬프트 작성.
 prompt = PromptTemplate.from_template(
@@ -69,21 +80,21 @@ prompt = PromptTemplate.from_template(
     Always provide well-structured answers in Korean, including relevant data points.
     Avoid unnecessary elaboration.
 
-# 이전 대화 기록:
-{chat_history}
+    # 이전 대화 기록:
+    {chat_history}
 
-# 질문: 
-{question} 
+    # 질문:
+    {question}
 
-# 검색된 정보: 
-{info} 
+    # 검색된 정보:
+    {info}
 
-# 답변:
-# 1. 요약: [질문에 대한 간단한 요약]
-2. 관련 정보: [추가로 제공할 수 있는 세부 정보]
-3. URL: [관련 링크 또는 소스]
-"""
-)
+    # 답변:
+    # 1. 요약: [질문에 대한 간단한 요약]
+    2. 관련 정보: [추가로 제공할 수 있는 세부 정보]
+    3. URL: [관련 링크 또는 소스]
+    """
+    )
 
 def create_chain(retriever, prompt):
     # llm모델 gpt-4o으로 생성.
@@ -145,8 +156,6 @@ def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddin
 
     # 기존 Vector DB와 병합
     vectorstore.merge_from(new_vectorstore)
-
-    print(f"Session {session_id}: 대화 기록이 Vector DB에 추가되었습니다.")
 
 # 사용자 대화 내역 저장 및 성능 개선
 def realtime_data_update_model(rag_with_chat, session_id, question):
