@@ -128,6 +128,44 @@ def create_rag_with_chat(chain):
 
 rag_with_chat = create_rag_with_chat(chain)
 
+def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddings):
+    """
+    사용자 대화 기록을 Vector DB에 추가하여 성능을 개선.
+    """
+    # 대화 기록을 Document 형태로 변환
+    content = f"""
+    Session ID: {session_id}
+    User Question: {question}
+    Assistant Answer: {answer}
+    """
+    document = Document(page_content=content.strip())
+
+    # 임베딩을 생성하고 Vector DB에 추가
+    new_vectorstore = FAISS.from_documents([document], embedding=embeddings)
+
+    # 기존 Vector DB와 병합
+    vectorstore.merge_from(new_vectorstore)
+
+    print(f"Session {session_id}: 대화 기록이 Vector DB에 추가되었습니다.")
+
+# 사용자 대화 내역 저장 및 성능 개선
+def realtime_data_update_model(rag_with_chat, session_id, question):
+    """
+    RAG 체인과 사용자 대화를 관리하며 실시간으로 Vector DB 업데이트.
+    """
+    # RAG 모델 실행
+    response = rag_with_chat.invoke({"question": question,"session_ids": session_id},config={"configurable": {"session_id": session_id}})
+
+    # 대화 내용 저장
+    session_history = get_session_history(session_id)
+    session_history.add_user_message(question)
+    session_history.add_ai_message(response)
+
+    # Vector DB 업데이트
+    save_chat_in_vectorstore(session_id, question, response, vectorstore, embeddings)
+
+    return response
+
 # 코드 테스트용.
 if __name__ == "__main__":
     while True:
@@ -136,12 +174,6 @@ if __name__ == "__main__":
         if question == "exit":
             break
         
-        response = rag_with_chat.invoke(
-            {
-            "question": question,
-            "session_ids": session_id
-            },
-        config={"configurable": {"session_id": session_id}}
-        )
+        response = realtime_data_update_model(rag_with_chat, session_id, question)
 
         print(f"답: {response}")
