@@ -1,4 +1,4 @@
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 import openai
 import streamlit as st
@@ -7,11 +7,12 @@ from datetime import datetime
 from openai import OpenAIError
 
 # .env 파일에서 환경 변수 로드
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# load_dotenv()
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# OpenAI API 키 설정
-openai.api_key = OPENAI_API_KEY
+# OpenAI API 키 초기화
+if "OPENAI_API_KEY" not in st.session_state:
+    st.session_state["OPENAI_API_KEY"] = ""
 
 # 이미지 파일 경로
 logo_image_path = "image/logo_image.png"
@@ -71,6 +72,9 @@ def main():
         st.markdown("---")
         st.subheader("🔑 OpenAI API 키 입력")
         api_key_input = st.text_input("OpenAI API 키를 입력하세요", type="password")
+        if api_key_input:
+            st.session_state["OPENAI_API_KEY"] = api_key_input
+            st.success("API 키가 설정되었습니다.")
 
         st.markdown("---")
         st.subheader("📂 채팅 txt 파일 불러오기")
@@ -90,6 +94,13 @@ def main():
         st.markdown("---")
         st.markdown("<p style='text-align: center;'>📩 <strong>Contact us:</strong> wriml92@knou.ac.kr</p>", unsafe_allow_html=True)
 
+    # OpenAI API 키 설정
+    if st.session_state["OPENAI_API_KEY"]:
+        openai.api_key = st.session_state["OPENAI_API_KEY"]
+    else:
+        st.warning("OpenAI API 키를 입력하세요.")
+        st.stop()
+        
     # 사용자 입력 섹션
     user_input = st.chat_input("메세지를 입력해 주십시오.")
 
