@@ -29,14 +29,20 @@ def main():
     )
 
     # 메인 화면 로고 이미지
-    st.logo(logo_image_path)
- 
-    # 메인 화면 제목
-    st.title("JobGPT에 오신 것을 환영합니다.")
-    st.markdown("""
-    JobGPT는 취업과 경력 개발을 지원하는 AI 기반 챗봇입니다.  
-    아래 버튼을 클릭하여 질문을 입력해 보세요!
-    """)
+    if os.path.exists(logo_image_path):
+        st.logo(logo_image_path)
+    else:
+        st.error(f"이미지 파일을 찾을 수 없습니다: {logo_image_path}")
+
+    # 메인 화면 중앙 정렬
+    with st.container():
+        st.markdown("<h1 style='text-align: center;'>JobGPT에 오신 것을 환영합니다.</h1>", unsafe_allow_html=True)
+        st.markdown("""
+        <p style='text-align: center;'>
+        JobGPT는 취업과 경력 개발을 지원하는 <strong>AI 기반 챗봇</strong>입니다.<br>
+        아래 입력창에 질문을 입력해 보세요!
+        </p>
+        """, unsafe_allow_html=True)
 
     # 초기 세션 상태 설정
     if "messages" not in st.session_state:
@@ -51,10 +57,14 @@ def main():
         # 이전 세션 불러오기
         saved_sessions = st.session_state["saved_sessions"]
         if saved_sessions:
-            selected_session = st.selectbox("이전 채팅 세션 불러오기", options=list(range(len(saved_sessions))), format_func=lambda x: f"채팅 기록 {x + 1}")
-            if st.button("선택된 세션 불러오기"):
-                # 선택된 세션 불러오기
-                st.session_state["messages"] = saved_sessions[selected_session]
+            st.subheader("이전 채팅 세션 불러오기")
+            for idx, session in enumerate(saved_sessions):
+                session_name = f"채팅 기록 {idx + 1}"
+                if st.button(session_name, key=f"load_session_{idx}"):
+                    # 선택된 세션 불러오기
+                    st.session_state["messages"] = copy.deepcopy(session)
+                    st.success(f"{session_name} 을(를) 불러왔습니다.")
+                    st.rerun()
 
         st.markdown("---")
         st.markdown("### 채팅 txt 파일 불러오기")
