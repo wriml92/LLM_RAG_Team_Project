@@ -3,10 +3,10 @@ import os
 import json
 from dotenv import load_dotenv
 from datetime import datetime
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 import time
 
 load_dotenv(dotenv_path='.env')
@@ -62,8 +62,6 @@ def refine_job_data(data):
     return refined_data
 
 def crawling_company_info(url):
-    from selenium.webdriver.chrome.service import Service
-
     chromedriver_path = "/opt/homebrew/bin/chromedriver"  # ChromeDriver 경로
     service = Service(chromedriver_path)
 
