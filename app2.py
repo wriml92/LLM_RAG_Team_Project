@@ -69,6 +69,10 @@ def main():
         st.session_state['selected_language'] = selected_language
 
         st.markdown("---")
+        st.subheader("🔑 OpenAI API 키 입력")
+        api_key_input = st.text_input("OpenAI API 키를 입력하세요", type="password")
+
+        st.markdown("---")
         st.subheader("📂 채팅 txt 파일 불러오기")
 
         # 파일 업로더 추가
