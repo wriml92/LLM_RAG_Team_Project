@@ -1,4 +1,3 @@
-# from dotenv import load_dotenv
 import os
 import openai
 import streamlit as st
@@ -6,25 +5,21 @@ import copy
 from datetime import datetime
 from openai import OpenAIError
 
-# .env 파일에서 환경 변수 로드
-# load_dotenv()
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 # OpenAI API 키 초기화
 if "OPENAI_API_KEY" not in st.session_state:
     st.session_state["OPENAI_API_KEY"] = ""
 
 # 이미지 파일 경로
-logo_image_path = "image/logo_image.png"
+logo_image = "image/logo_image.png"
 user_avatar = "image/logo_image.png"
-assistant_avatar = "image/logo_image.png"
+assistant_avatar = "image/assistant_avatar.png"
 
 # Streamlit 애플리케이션 구성
 def main():
     # Streamlit 설정
     st.set_page_config(
         page_title="JobGPT - AI 커리어 도우미",
-        page_icon=logo_image_path,
+        page_icon=logo_image,
         layout="centered",
         initial_sidebar_state="expanded"
     )
@@ -39,10 +34,10 @@ def main():
     local_css("style.css")
 
     # 메인 화면 로고 이미지
-    if os.path.exists(logo_image_path):
-        st.logo(logo_image_path)
+    if os.path.exists(logo_image):
+        st.logo(logo_image)
     else:
-        st.error(f"이미지 파일을 찾을 수 없습니다: {logo_image_path}")
+        st.error(f"이미지 파일을 찾을 수 없습니다: {logo_image}")
 
     # 메인 화면 중앙 정렬
     with st.container():
@@ -100,7 +95,7 @@ def main():
     else:
         st.warning("OpenAI API 키를 입력하세요.")
         st.stop()
-        
+
     # 사용자 입력 섹션
     user_input = st.chat_input("메세지를 입력해 주십시오.")
 
@@ -127,9 +122,7 @@ def main():
     # 채팅 인터페이스
     for msg in st.session_state["messages"]:
         if msg["role"] == "user":
-            with st.chat_message("user", avatar=user_avatar):
-                st.markdown(msg["content"])
-                # 사용자 말풍선
+            # 사용자 말풍선
             st.markdown(
             f"""
             <div style="display: flex; justify-content: flex-end; align-items: center; margin: 10px 0;">
@@ -143,7 +136,6 @@ def main():
                     font-size: 14px;">
                     {msg['content']}
                 </div>
-                <img src="{user_avatar}" alt="user" style="width: 40px; height: 40px; border-radius: 50%; margin-left: 10px;">
             </div>
             """,
             unsafe_allow_html=True,
