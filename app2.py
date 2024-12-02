@@ -63,17 +63,10 @@ def main():
     with st.sidebar:
         st.header("📋 JobGPT 메뉴")
 
-        # 이전 세션 불러오기
-        saved_sessions = st.session_state["saved_sessions"]
-        if saved_sessions:
-            st.subheader("💾 이전 채팅 세션 불러오기")
-            for idx, session in enumerate(saved_sessions):
-                session_name = f"채팅 기록 {idx + 1}"
-                if st.button(session_name, key=f"load_session_{idx}"):
-                    # 선택된 세션 불러오기
-                    st.session_state["messages"] = copy.deepcopy(session)
-                    st.success(f"{session_name} 을(를) 불러왔습니다.")
-                    st.rerun()
+        # 언어 선택
+        language_options = ["한국어", "English", "日本語", "中文", "Español"]
+        selected_language = st.selectbox("언어를 선택하세요", language_options)
+        st.session_state['selected_language'] = selected_language
 
         st.markdown("---")
         st.subheader("📂 채팅 txt 파일 불러오기")
@@ -147,8 +140,33 @@ def main():
 # OpenAI GPT-4o API를 호출하여 사용자의 질문에 대한 응답을 생성하는 함수
 def get_openai_response(user_input):
     try:
-        messages = [{"role": "system", "content": "You are a helpful assistant specialized in job searching and career advice."}]
-        messages += st.session_state["messages"]
+        # 언어 코드 매핑
+        language_code_mapping = {
+            "한국어": "ko",
+            "English": "en",
+            "日本語": "ja",
+            "中文": "zh",
+            "Español": "es"
+        }
+        # 선택된 언어 코드 가져오기
+        user_language_code = language_code_mapping.get(st.session_state.get('selected_language', '한국어'), 'ko')
+
+        # 시스템 메시지를 선택된 언어로 설정
+        system_messages = {
+            "ko": "당신은 취업 및 경력 상담에 특화된 유용한 도우미입니다.",
+            "en": "You are a helpful assistant specialized in job searching and career advice.",
+            "ja": "あなたは就職とキャリアアドバイスに特化した役に立つアシスタントです。",
+            "zh": "你是一个专门从事求职和职业建议的有用助手。",
+            "es": "Eres un asistente útil especializado en búsqueda de empleo y asesoramiento profesional."
+        }
+        system_message = system_messages.get(user_language_code, system_messages['en'])
+
+        messages = [{"role": "system", "content": system_message}]
+
+        # 이전 메시지 추가
+        for msg in st.session_state["messages"]:
+            if msg["role"] != "system":
+                messages.append(msg)
 
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -156,7 +174,9 @@ def get_openai_response(user_input):
             max_tokens=1000, # 최대 토큰 길이 300자에서 1000자로 수정
             temperature=0.7
         )
-        return response["choices"][0]["message"]["content"].strip()
+        bot_response = response["choices"][0]["message"]["content"].strip()
+
+        return bot_response
     except openai.OpenAIError as e: # 예외 처리 수정
         return f"OpenAI API에서 오류가 발생했습니다: {str(e)}"
     except Exception as e:
