@@ -4,6 +4,7 @@ import streamlit as st
 import copy
 from datetime import datetime
 from openai import OpenAIError
+from elevenlabs.client import ElevenLabs
 
 # OpenAI API 키 초기화
 if "OPENAI_API_KEY" not in st.session_state:
@@ -56,6 +57,8 @@ def main():
         st.session_state["saved_sessions"] = {}
     if "session_id" not in st.session_state:
         st.session_state["session_id"] = ""
+    if "ELEVENLABS_API_KEY" not in st.session_state:
+        st.session_state["ELEVENLABS_API_KEY"] = ""
 
     # 사이드바: 이전 채팅 세션을 불러오기 위한 인터페이스
     with st.sidebar:
@@ -95,6 +98,12 @@ def main():
                 else:
                     st.info(f"세션 ID '{session_id_input}'로 저장된 채팅 내용이 없습니다.")
 
+        st.subheader("🔊 ElevenLabs API 키 입력")
+        elevenlabs_api_key_input = st.text_input("ElevenLabs API 키를 입력하세요", type="password")
+        if elevenlabs_api_key_input:
+            st.session_state["ELEVENLABS_API_KEY"] = elevenlabs_api_key_input
+            st.success("ElevenLabs API 키가 설정되었습니다.")
+
         st.markdown("---")
         st.subheader("📂 채팅 txt 파일 불러오기")
 
@@ -133,6 +142,18 @@ def main():
 
         # JobGPT 응답을 세션 상태에 추가
         st.session_state["messages"].append({"role": "assistant", "content": bot_response})
+
+        # # ElevenLabs API 키가 설정되어 있는 경우 음성 생성 및 재생
+        # if st.session_state["ELEVENLABS_API_KEY"]:
+        #     audio = generate(
+        #         text=bot_response,
+        #         api_key=st.session_state["ELEVENLABS_API_KEY"],
+        #         voice="Rachel"  # 원하는 목소리로 변경 가능
+        #     )
+        #     # 음성 재생
+        #     st.audio(audio, format="audio/mp3")
+        # else:
+        #     st.info("ElevenLabs API 키가 설정되어 있지 않아 음성을 재생할 수 없습니다.")
 
     # 현재 대화를 저장하기 위한 버튼
     if st.button("현재 대화 저장"):
