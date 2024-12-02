@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import time
 
-load_dotenv(dotenv_path='key.env')
+load_dotenv(dotenv_path='.env')
 
 # 사람인 API 정보
 api_key = os.getenv("API_KEY") # 발급받은 API 키를 여기에 입력하세요
@@ -22,7 +22,7 @@ os.makedirs(download_folder, exist_ok=True)
 params = {
     "access-key": api_key,
     "keywords": "python",  # 검색 키워드 (예: 'python')
-    "count": 5,           # 한 번에 가져올 공고 수
+    "count": 10,           # 한 번에 가져올 공고 수
     "start": 1             # 시작 페이지
 }
 
@@ -62,30 +62,36 @@ def refine_job_data(data):
     return refined_data
 
 def crawling_company_info(url):
+    from selenium.webdriver.chrome.service import Service
+
+    chromedriver_path = "/opt/homebrew/bin/chromedriver"  # ChromeDriver 경로
+    service = Service(chromedriver_path)
 
     options = Options()
-    options.add_experimental_option("debuggerAddress", "localhost:9222")
+    driver = webdriver.Chrome(service=service, options=options)
 
-    driver = webdriver.Chrome(options=options)
     driver.get(url)
     time.sleep(3)
 
+    # WebElement를 수집
     info_names = driver.find_elements(By.CLASS_NAME, 'company_summary_desc')
     infos = driver.find_elements(By.CLASS_NAME, 'company_summary_tit')
 
     content = {}
 
+    # WebElement 객체의 text 속성만 추출
     if len(info_names) == len(infos):
-        content['설립 일자'] = info_names[0]
-        content['연차'] = infos[0]
+        content['설립 일자'] = info_names[0].text if len(info_names) > 0 else "정보 없음"
+        content['연차'] = infos[0].text if len(infos) > 0 else "정보 없음"
         for name, info in zip(info_names[1:], infos[1:]):
             key = name.text
             value = info.text
             content[key] = value
-    
+
     if len(info_names) == 0:
         content["회사 정보"] = "정보 없음"
 
+    driver.quit()  # ChromeDriver 종료
     return content
 
 def merge_data(data):
@@ -111,3 +117,5 @@ merged_data = merge_data(refined_data)
 file_path = './jobdata/data.json'
 with open(file_path, 'w', encoding="utf-8") as file:
     json.dump(merged_data, file, ensure_ascii=False, indent=4)
+
+print(data)  # API 호출 결과 출력
