@@ -121,6 +121,25 @@ def main():
         if msg["role"] == "user":
             with st.chat_message("user", avatar=user_avatar):
                 st.markdown(msg["content"])
+                # 사용자 말풍선
+            st.markdown(
+            f"""
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin: 10px 0;">
+                <div style="
+                    background-color: #E8F4FF;
+                    color: #000;
+                    padding: 10px 15px;
+                    border-radius: 15px;
+                    max-width: 70%;
+                    text-align: right;
+                    font-size: 14px;">
+                    {msg['content']}
+                </div>
+                <img src="{user_avatar}" alt="user" style="width: 40px; height: 40px; border-radius: 50%; margin-left: 10px;">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         else:
             with st.chat_message("assistant", avatar=assistant_avatar):
                 st.markdown(msg["content"])
