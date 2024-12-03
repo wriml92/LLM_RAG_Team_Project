@@ -56,19 +56,19 @@
 
 #### 가상 환경 설정
 
-1. 먼저 vscode의 터미널이나 cmd 환경에서 아래 문장 입력.
+1. 먼저 vscode의 터미널이나 cmd 환경에서 아래 문장 입력
 
 '''python -m venv [가상환경이름]'''  
 
 ![예시](./image/venv-1.png)  
 
-2. 가상환경에 접속.
+2. 가상환경에 접속
 
 '''[가상환경명]\Scripts\activate'''  
 
 ![예시_2](./image/venv-2.png)  
 
-3. [requirements.txt](./requirement.txt) 활용하여 패키지 설치.
+3. [requirements.txt](./requirement.txt) 활용하여 패키지 설치
 
 '''pip install -r requirements.txt'''  
 
@@ -76,7 +76,7 @@
 
 #### Streamlit 실행
 
-'''streamlit run app2.py''' 입력하여 streamlit 실행.
+'''streamlit run app2.py''' 입력하여 streamlit 실행
 
 [app2.py(클릭 후 터미널에 문구 입력)](./app2.py)  
 
