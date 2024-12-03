@@ -153,7 +153,7 @@ def main():
     
     with col2:
         if st.button("음성 채팅"):
-            st.info("마이크로 질문을 녹음하세요. '중지' 버튼을 누르세요.")
+            st.info("마이크로 질문을 녹음하세요.")
             # 언어 코드 매핑
             language_code_mapping = {
                 "Korean": "ko-KR",

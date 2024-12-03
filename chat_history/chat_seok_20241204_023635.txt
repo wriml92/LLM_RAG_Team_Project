@@ -1,0 +1,47 @@
+User: 나는 컴퓨터공학과 출신이고 개발자 공고를 찾고 있어.
+Assistant: 1. Summation: 컴퓨터공학과 출신으로 개발자 직무를 찾고 계시는군요. 현재 여러 기업에서 관련 직무의 채용 공고가 있습니다.
+
+2. Related information:
+   - **딜로이트 컨설팅**: IT 컨설팅, 딥러닝, 머신러닝, 블록체인, 빅데이터 등 다양한 분야의 경력직 채용 중입니다. [자세한 정보](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49499188)
+   - **유메이커스**: 콘텐츠 개발자 채용 중이며, C언어 및 Python 사용 경험이 필요합니다. [자세한 정보](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49512995)
+   - **SBS아카데미컴퓨터아트학원수원점**: 프로그래밍 학과 강사 구인 중이며, C언어, Java, Python 관련 경험이 요구됩니다. [자세한 정보](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49419772)
+
+3. URL:
+   - 딜로이트 컨설팅: [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49499188)
+   - 유메이커스: [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49512995)
+   - SBS아카데미컴퓨터아트학원수원점: [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49419772)
+User: 회사 위치는 성동구쪽에 있었으면 좋겠어.
+Assistant: 1. Summation: 성동구에 위치한 개발자 직무를 찾고 계시는군요. 관련 채용 공고를 아래에 정리하였습니다.
+
+2. Related information:
+   - **리걸테크(주)**: 웹개발자(Python, Django) 채용 중입니다. 성동구에 위치하며, 경력 3~5년의 개발자를 찾고 있습니다. 학력은 무관하며, 급여는 회사 내규에 따릅니다.
+     - **직무 분야**: 소프트웨어 개발, 백엔드/서버 개발, 웹 개발, 블록체인
+     - **설립 연도**: 2015년
+     - **사원수**: 27명
+     - **매출액**: 25억 4,807만원
+
+3. URL:
+   - 리걸테크(주): [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49466077&utm_source=job-search-api&utm_medium=api&utm_campaign=saramin-job-search-api)
+User: 유지보수나 SQL과 관련된 채용공고를 찾아줘.
+Assistant: 1. Summation: 유지보수나 SQL과 관련된 채용 공고를 찾고 계시는군요. 관련 직무의 채용 정보를 아래에 정리하였습니다.
+
+2. Related information:
+   - **(주)한국갤럽조사연구소**: 웹개발자 경력 정규직 채용 중입니다. 서울 종로구에 위치하며, 경력 4~10년의 개발자를 찾고 있습니다.
+     - **직무 분야**: 웹개발, 유지보수, 데이터마이닝, 빅데이터, SQL 등
+     - **설립 연도**: 1974년
+     - **사원수**: 231명
+     - **매출액**: 425억 6,232만원
+   - **엠즈푸드시스템(주)**: 경영분석 담당자 채용 중입니다. 서울 마포구에 위치하며, 경력 1년 이상의 지원자를 찾고 있습니다.
+     - **직무 분야**: 데이터분석, SQL, 경영기획 등
+     - **설립 연도**: 2013년
+     - **사원수**: 65명
+     - **매출액**: 1,771억 841만원
+   - **(유)삼송**: SW/HW/SWQA 신입/경력직 모집 중입니다. 서울 금천구에 위치하며, 경력 무관의 지원자를 찾고 있습니다.
+     - **직무 분야**: S/W, SQL, 품질관리 등
+     - **설립 연도**: 1978년
+     - **매출액**: 3,000억원
+
+3. URL:
+   - (주)한국갤럽조사연구소: [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49466919&utm_source=job-search-api&utm_medium=api&utm_campaign=saramin-job-search-api)
+   - 엠즈푸드시스템(주): [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49472021&utm_source=job-search-api&utm_medium=api&utm_campaign=saramin-job-search-api)
+   - (유)삼송: [채용 공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49424005&utm_source=job-search-api&utm_medium=api&utm_campaign=saramin-job-search-api)
