@@ -225,6 +225,7 @@ def main():
                 st.markdown(
                 f"""
                 <div style="display: flex; justify-content: flex-start; align-items: center; margin: 10px 0;">
+                    <img src="https://raw.githubusercontent.com/wriml92/LLM_RAG_Team_Project/refs/heads/develop_1/image/assistant_avatar.png" alt="Assistant" style=" margin-right: 10px; width: 40px; height: 40px;">
                     <div style="
                         background-color: #f7fcfc;
                         color: #000;

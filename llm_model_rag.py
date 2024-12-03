@@ -285,14 +285,21 @@ def text_to_speech(text, api_key, voice_url="https://api.elevenlabs.io/v1/text-t
 if __name__ == "__main__":
     session_id = "jungseok"
     language = input("언어 선택 (ex: Korean): ")
+    mode = input("채팅은 0, 음성은 1 선택: ")
     while True:
-        print("질문 입력하세요(exit 입력 시 종료): ")
-        question = record_audio()
-        if question is None:
-            continue
-        if question.lower() in ["exit", "종료"]:
-            print("프로그램 종료.")
-            break
+        if mode == "0":
+            question = input("질문 입력하세요(exit 입력 시 종료): ")
+            if question == 'exit':
+                print("프로그램 종료.")
+                break
+        elif mode == "1":
+            print("질문 입력하세요(exit 입력 시 종료): ")
+            question = record_audio()
+            if question is None:
+                continue
+            if question.lower() in ["exit", "종료"]:
+                print("프로그램 종료.")
+                break
 
         data = load_job_data('jobdata')
         retriever, embeddings, vectorstore = create_retriever(data)
@@ -304,5 +311,6 @@ if __name__ == "__main__":
 
         print(f"답: {response}")
         
-        speech_response = process_response_for_speech(response)
-        text_to_speech(speech_response, eleven_api_key)
+        if mode == "1":
+            speech_response = process_response_for_speech(response)
+            text_to_speech(speech_response, eleven_api_key)
