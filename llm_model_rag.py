@@ -194,7 +194,7 @@ def realtime_data_update_model(rag_with_chat, session_id, question, vectorstore,
         print(f"[오류] RAG 모델 업데이트 실패: {e}")
         return "[오류] 대화 업데이트 실패. 다시 시도하세요."
     
-def record_audio(language="ko-KR", listen_time=10, energy_threshold=300, pause_threshold=2.0):
+def record_audio(language="ko-KR", listen_time=15, energy_threshold=300, pause_threshold=2.0):
     '''
     마이크를 통해 음성 입력을 받고 텍스트로 변환.
     영어: en-US, en-GB 
@@ -254,7 +254,7 @@ def text_to_speech(text):
             "text": text,
             "model_id": "eleven_multilingual_v2",
             "voice_settings": {
-                "stability": 0.3,
+                "stability": 0.5,
                 "similarity_boost": 1,
                 "style": 1,
                 "use_speaker_boost": True
