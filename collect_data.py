@@ -11,6 +11,12 @@ from fake_useragent import UserAgent
 import random
 import time
 
+'''필독
+이 데이터 수집 파이썬 파일에는 사람인 api_key를 활용해야함.
+하지만 api_key를 담은 key.env은 보안을 위해 커밋되지 않은 상태로 배포됨.
+따라서 이 파일로 데이터를 원활하게 수집하려면 사람인 api의 승인 요청을 받아 개인 key.env 파일을 생성해 api-key의 환경변수를 만들어 실행해야함.
+'''
+
 load_dotenv(dotenv_path='key.env')
 
 # 사람인 API 정보
