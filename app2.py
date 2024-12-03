@@ -155,14 +155,21 @@ def main():
         # else:
         #     st.info("ElevenLabs API 키가 설정되어 있지 않아 음성을 재생할 수 없습니다.")
 
-    # 현재 대화를 저장하기 위한 버튼
-    if st.button("현재 대화 저장"):
-        if st.session_state.get("session_id"):
-            st.session_state["saved_sessions"][st.session_state["session_id"]] = copy.deepcopy(st.session_state["messages"])
-            st.success(f"세션 ID '{st.session_state['session_id']}'로 현재 대화가 저장되었습니다!")
-            save_chat_to_file(st.session_state["messages"], st.session_state["session_id"])
-        else:
-            st.error("세션 ID를 입력하세요.")
+    col1, col2= st.columns([0.2, 0.8])
+    
+    with col1:
+        # 현재 대화를 저장하기 위한 버튼
+        if st.button("현재 대화 저장"):
+            if st.session_state.get("session_id"):
+                st.session_state["saved_sessions"][st.session_state["session_id"]] = copy.deepcopy(st.session_state["messages"])
+                st.success(f"세션 ID '{st.session_state['session_id']}'로 현재 대화가 저장되었습니다!")
+                save_chat_to_file(st.session_state["messages"], st.session_state["session_id"])
+            else:
+                st.error("세션 ID를 입력하세요.")
+    
+    with col2:
+        if st.button("음성 채팅"):
+            st.info("음성 채팅 기능은 준비중입니다.")
 
     # 채팅 인터페이스
     for msg in st.session_state["messages"]:
