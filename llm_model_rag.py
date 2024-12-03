@@ -13,7 +13,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory   # �
 from langchain_core.runnables.history import RunnableWithMessageHistory     # 대화 기록을 기반으로 작업을 처리하는 실행 도구.
 from operator import itemgetter                                             # 리스트나 딕셔너리에서, 데이터의 특정 키나 항목을 쉽게 가져오기 위한 유틸리티 함수.
 from langchain_core.documents import Document                               # 문서 데이터를 구조화하고 관리하기 위한 클래스를 가져옴.
-from langchain_huggingface import HuggingFaceEmbeddings                     # HuggingFace 모델 활용한 임베딩 생성 기능을 가져옴.
+from langchain.embeddings import HuggingFaceEmbeddings                      # HuggingFace 모델 활용한 임베딩 생성 기능을 가져옴.
 
 # 음성 기능 구현 라이브러리.
 import requests                  # HTTP 요청을 보내고, 응답을 처리하기 위한 라이브러리.
