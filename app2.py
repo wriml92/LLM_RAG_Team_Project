@@ -90,22 +90,6 @@ def main():
         if session_id_input:
             st.session_state["session_id"] = session_id_input
             st.success(f"세션 ID가 설정되었습니다: {session_id_input}")
-            if session_id_input in st.session_state["saved_sessions"]:
-                st.session_state["messages"] = copy.deepcopy(st.session_state["saved_sessions"][session_id_input])
-                st.success(f"세션 ID '{session_id_input}'로 저장된 채팅 내용을 불러왔습니다.")
-            else:
-                # 파일에서 불러오기 시도
-                filename = f"chat_history_{session_id_input}.txt"
-                if os.path.exists(filename):
-                    with open(filename, "r", encoding="utf-8") as file:
-                        loaded_messages = load_chat_from_file(file)
-                        if loaded_messages:
-                            st.session_state["messages"] = loaded_messages
-                            st.success(f"세션 ID '{session_id_input}'로 저장된 채팅 내용을 파일에서 불러왔습니다.")
-                        else:
-                            st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
-                else:
-                    st.info(f"세션 ID '{session_id_input}'로 저장된 채팅 내용이 없습니다.")
 
         st.subheader("🔊 ElevenLabs API 키 입력")
         elevenlabs_api_key_input = st.text_input("ElevenLabs API 키를 입력하세요", type="password")
