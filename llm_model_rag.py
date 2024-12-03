@@ -1,10 +1,13 @@
-import os                                                                   # 운영 체제 관련 기능을 사용을 위한 os 모듈 임포트.
+# 환경 설정 및 변수 관리 관련 도구 임포트.
+import os                                                                   # 운영 체제 관련 기능 사용을 위한 os 모듈 임포트.
 import json                                                                 # JSON 데이터 처리를 위한 라이브러리.
 from dotenv import load_dotenv                                              # .env 파일에서 환경 변수 로드.
+
+# LangChain 관련 도구 임포트.
 from langchain_text_splitters import RecursiveCharacterTextSplitter         # 긴 텍스트를 문단, 문장 등으로 잘게 나누는 도구.
 from langchain.vectorstores import FAISS                                    # FAISS를 활용, 검색과 유사도 계산에 사용하는 벡터 데이터베이스를 가져옴.
 from langchain_core.output_parsers import StrOutputParser                   # 출력 데이터를 문자열로 파싱하는 도구를 가져옴.
-from langchain_core.prompts import PromptTemplate                           # 프롬프트 템플릿을 생성하고 관리하기 위한 도구.
+from langchain_core.prompts import PromptTemplate                           # 프롬프트 템플릿을 생성 및 관리하기 위한 도구.
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings                   # OpenAI의 ChatGPT API를 사용하기 위한 인터페이스를 가져옴.
 from langchain_community.chat_message_histories import ChatMessageHistory   # 대화 기록을 관리하는 도구. (채팅 메시지 히스토리)
 from langchain_core.runnables.history import RunnableWithMessageHistory     # 대화 기록을 기반으로 작업을 처리하는 실행 도구.
@@ -12,9 +15,23 @@ from operator import itemgetter                                             # �
 from langchain_core.documents import Document                               # 문서 데이터를 구조화하고 관리하기 위한 클래스를 가져옴.
 from langchain_huggingface import HuggingFaceEmbeddings                     # HuggingFace 모델 활용한 임베딩 생성 기능을 가져옴.
 
+# 음성 기능 구현 라이브러리.
+import requests                  # HTTP 요청을 보내고, 응답을 처리하기 위한 라이브러리.
+from io import BytesIO           # 메모리 내에서 파일처럼 동작하는 바이너리 스트림을 관리하기 위한 모듈.
+from pydub import AudioSegment   # 오디오 파일을 다양한 형식으로 변환, 처리 가능한 도구.
+from pydub.playback import play  # 오디오 데이터를 재생하기 위한 함수.
+import speech_recognition as sr  # 음성 인식을 통해 음성을 텍스트로 변환하는 라이브러리.
+
+
 # api key, env파일에서 로드.
 load_dotenv(dotenv_path='key.env')
+
+# openai
 api_key = os.getenv("OPENAI_API_KEY")
+
+# ElevenLabs API 설정
+eleven_api_key = os.getenv("Elevenlabs_API_KEY")  # 환경 변수에서 ElevenLabs API 키를 가져옴.
+voice_url = os.getenv("Eleven_URL")               # 환경 변수에서 ElevenLabs 음성 변환 API의 URL 가져옴.
 
 def load_job_data(folder_path):
     """
@@ -58,8 +75,6 @@ def load_job_data(folder_path):
         data_2.append(doc) # 변환된 Document를 리스트에 추가.
     return data_2
 
-data = load_job_data('jobdata') # Document 객체들의 리스트 반환.
-
 def create_retriever(data):
     '''텍스트 정보 청킹 후에 임베딩 생성, 저장 공간인 faiss vector DB와 이를 활용해 검색기 생성.'''
     # document chunking
@@ -77,37 +92,36 @@ def create_retriever(data):
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
     return retriever, embeddings, vectorstore
 
-retriever, embeddings, vectorstore = create_retriever(data)
+def create_prompt(language="Korean"):
+    # 프롬프트 작성.
+    prompt = PromptTemplate.from_template(
+        f"""You are an expert assistant for job search and recommendation. 
+        Always provide well-structured answers in {language}, including relevant data points.
+        Avoid unnecessary elaboration.
 
-# 프롬프트 작성.
-prompt = PromptTemplate.from_template(
-    """You are an expert assistant for job search and recommendation. 
-    Always provide well-structured answers in Korean, including relevant data points.
-    Avoid unnecessary elaboration.
+        # Previous conversation history:
+        {{chat_history}}
 
-    # 이전 대화 기록:
-    {chat_history}
+        # Question:Summation
+        {{question}}
 
-    # 질문:
-    {question}
+        # Information retrieved:
+        {{info}}
 
-    # 검색된 정보:
-    {info}
-
-    # 답변:
-    # 1. 요약: [질문에 대한 간단한 요약]
-    2. 관련 정보: [추가로 제공할 수 있는 세부 정보]
-    3. URL: [관련 링크 또는 소스]
-    """
-    )
+        # Answer:
+        # 1. Summation: [질문에 대한 간단한 요약]
+        2. Related information: [추가로 제공할 수 있는 세부 정보]
+        3. URL: [관련 링크 또는 소스]
+        """
+        )
+    return prompt
 
 def create_chain(retriever, prompt):
-    # llm모델 gpt-4o으로 생성.
     """
     데이터를 검색하고 응답을 생성하는 체인을 생성하는 함수.
     데이터 검색(retriever), 질문 처리(prompt), 모델 응답 생성(llm) 과정을 연결.
     """
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.3) # llm모델 gpt-4o으로 생성.
 
     # 체인 생성
     chain = (
@@ -122,9 +136,6 @@ def create_chain(retriever, prompt):
     )
 
     return chain
-
-# 검색 도구(retriever)와 질문 생성 도구(prompt)를 활용해 체인 생성.
-chain = create_chain(retriever, prompt)
 
 # 대화 세션 기록
 chat = {}
@@ -148,9 +159,6 @@ def create_rag_with_chat(chain):
     )
     return rag_with_chat
 
-# 체인을 기반으로 대화 기록을 포함한 RAG 객체 생성.
-rag_with_chat = create_rag_with_chat(chain)
-
 def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddings):
     """사용자 대화 기록을 Vector DB에 추가하여 성능을 개선."""
     # 대화 기록을 Document 형태로 변환. /1. 사용자를 식별할 ID, 2. 사용자가 입력한 질문, 3. AI의 응답. 
@@ -166,42 +174,146 @@ def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddin
 
     # 기존 Vector DB와 새롭게 생성한 Vector DB병합.
     vectorstore.merge_from(new_vectorstore)
-
+    
+    '''
+    새 벡터스토어를 만드는 건 비효율적일 수 있음. merge를 활용하지 않고, 아래 코드를 활용해 기존 데이터베이스에 추가하는 방법도 사용 가능
+    vectorstore.add_documents([document], embedding=embeddings)
+    '''
+    
 # 사용자 대화 내역 저장 및 성능 개선
-def realtime_data_update_model(rag_with_chat, session_id, question):
+def realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings):
     """
     RAG 체인과 사용자 대화를 관리하며 실시간으로 Vector DB 업데이트.
-    AI 모델의 성능과 데이터 활용도를 지속적으로 향상.
     """
-    # RAG 모델 실행 / 질문 처리, 응답 생성.
-    response = rag_with_chat.invoke(
-        {"question": question,"session_ids": session_id},   # 입력 데이터.
-        config={"configurable": {"session_id": session_id}} # 세션별 설정.
-        )
+    try:
+        # RAG 모델 실행 / 사용자 질문과 세션 ID 기반으로, RAG 모델에 요청을 보내 응답을 받음.
+        response = rag_with_chat.invoke({"question": question,"session_ids": session_id}, config={"configurable": {"session_id": session_id}})
+        
+        # 응답이 비어 있을 경우, 예외 처리.
+        if not response:
+            raise ValueError("Empty response from RAG model.")
+        
+        # 대화 내용 저장
+        session_history = get_session_history(session_id)   # 세션 기록을 가져와, 사용자 메시지와 AI 응답을 추가 저장.
+        session_history.add_user_message(question)          # 사용자의 질문 저장.
+        session_history.add_ai_message(response)            # AI의 응답 저장.
 
-    # 대화 내용 저장
-    session_history = get_session_history(session_id)   # 세션 기록 가져오기.
-    session_history.add_user_message(question)          # 사용자의 질문 추가.
-    session_history.add_ai_message(response)            # AI 응답 추가.
+        # Vector DB 업데이트 / 질문과 응답 데이터를 벡터 데이터베이스에 저장, 향후 검색 및 유사도 계산에 활용.
+        save_chat_in_vectorstore(session_id, question, response, vectorstore, embeddings)
 
-    # Vector DB 업데이트
-    save_chat_in_vectorstore(session_id, question, response, vectorstore, embeddings)
+        return response
+    
+    # 예외가 발생할 경우 오류 메시지 출력, 사용자에게 실패 메시지를 표시.
+    except Exception as e:
+        print(f"[오류] RAG 모델 업데이트 실패: {e}")
+        return "[오류] 대화 업데이트 실패. 다시 시도하세요."
+    
+def record_audio(language="ko-KR", listen_time=15, energy_threshold=300, pause_threshold=2.0):
+    '''
+    마이크를 통해 음성 입력을 받고 텍스트로 변환.
+    영어: en-US, en-GB 
+    일본어: ja-JP
+    중국어: zh-CN
+    불어: fr-FR
+    스페인어: es-ES
+    '''
+    recognizer = sr.Recognizer()                    # 음성 인식을 위한, 인식기 객체 생성.
+    recognizer.energy_threshold = energy_threshold  # 민감도 설정 (배경 소음을 무시)
+    recognizer.pause_threshold = pause_threshold    # 음성입력을 안 해도, 인식을 중단하지 않는 시간.
 
-    return response
+    # 마이크에서 음성 데이터를 수집.
+    with sr.Microphone() as source:
+        print("음성 입력 중...(입력 시간 {listen_time}초)(중지: 'Ctrl+C')")
+        try:
+            # timeout : 음성 입력이 시작되지 않을 경우 대기할 시간.
+            # phrase_time_limit : 전체 음성을 입력받을 최대 시간.
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=listen_time)
+            text = recognizer.recognize_google(audio, language=language)    # 음성을 텍스트로 변환.
+            print(f"텍스트: {text}")
+            return text
+        
+        # 음성 인식 실패, 문제 발생할 경우의 오류 처리들.
+        except sr.UnknownValueError:    # 음성을 인식하지 못할 경우.
+            print("음성 인식 불가.")
+            return None
+        
+        except sr.WaitTimeoutError:     # 음성 입력 대기 시간 초과.
+            print("음성 입력이 감지되지 않았음. 다시 시도 요망.")
+            return None
+        
+        except sr.RequestError as e:    # 음성 인식 서비스 요청 실패.
+            print(f"음성 서비스 오류: {e}")
+            return None
+        
+def process_response_for_speech(response):
+    """
+    AI 응답에서 음성 출력에 필요한 부분만 추출 (URL 제외).
+    """
+    try:
+        # 응답에 '3. URL:'이 포함된다면, 이후 텍스트를 제거.
+        if "3. URL:" in response:
+            response = response.split("3. URL:")[0].strip() # URL 이전 부분만 남기고 공백 제거.
+        return response
+    except Exception as e:
+        print(f"[오류] 응답 처리 실패: {e}")
+        return response  # 실패 시 로그 출력 후, 원래 응답 그대로 반환.
+
+def text_to_speech(text):
+    """
+    ElevenLabs TTS를 사용해 텍스트를 음성으로 변환하고 재생.
+    """
+    try:
+        headers = {
+            "Accept": "audio/mpeg",             # 오디오 형식 지정. (audio/mpeg)
+            "xi-api-key": eleven_api_key,       # ElevenLabs API 키 인증.
+            "Content-Type": "application/json", # 요청 데이터 형식(JSON) 지정.
+        }
+        data = {
+            "text": text,                         # 변환할 텍스트.
+            "model_id": "eleven_multilingual_v2", # 다국어 지원 TTS 모델 사용.
+            "voice_settings": {
+                "stability": 0.5,                 # 음성 안정성 설정.
+                "similarity_boost": 1,            # 텍스트와 음성의 유사성 강화.
+                "style": 1,                       # 음성 스타일 조정. (목소리에 감정을 얼마나 담을 것인지 결정.)
+                "use_speaker_boost": True         # 음성 출력 부스트 활성화.
+            }
+        }
+        # ElevenLabs API로 POST 요청.
+        response = requests.post(voice_url, headers=headers, json=data) # 텍스트를 음성으로 변환한 결과 반환.
+        response.raise_for_status() # HTTP 요청 실패를 감지하고 프로그램에 알림. 요청이 실패하면,에러발생의 이유를 알려줌.
+
+        # 변환된 오디오 데이터를 메모리 스트림으로 읽어 재생.
+        audio_stream = BytesIO(response.content)
+        audio = AudioSegment.from_file(audio_stream, format="mp3")
+        play(audio)
+
+        # 오류 메시지 출력으로, 예외처리.
+    except Exception as e:
+        print(f"음성 변환 오류: {e}")
 
 # 코드 테스트용.
 if __name__ == "__main__":
-    """
-    사용자 입력을 기반으로 RAG 모델을 실시간 테스트하는 루프.
-    'exit' 입력 시 프로그램 종료.
-    """
+    session_id = "jungseok" #세션 ID 설정.
+    language = input("언어 선택 (ex: Korean): ")    # 사용자의 언어 선택.
     while True:
-        session_id = "jungseok"              #테스트용 ID.
-        question = input("질문 입력하세요: ") #사용자 질문 입력.  
-        if question == "exit":               #루프 종료를 위한 명령.  
+        print("질문 입력하세요(exit 입력 시 종료): ")   # while True: 로 인해, 사용자가 'exit' 또는 '종료'를 입력할 때까지 실행.
+        question = record_audio()   # 사용자의 음성 입력을 받음.
+        if question is None:        # 음성 인식 실패 시 반복.
+            continue
+        if question.lower() in ["exit", "종료"]:
+            print("프로그램 종료.")
             break
-        
-        # 입력된 질문을 기반으로 RAG 모델 실행 및 응답 생성
-        response = realtime_data_update_model(rag_with_chat, session_id, question)
+
+        data = load_job_data('jobdata')     # 'jobdata' 파일에서 직업 관련 데이터를 불러옴.
+        retriever, embeddings, vectorstore = create_retriever(data) # 데이터에서 검색기, 임베딩, 벡터 저장소를 생성.
+        prompt = create_prompt(language=language)   # 사용자가 선택한 언어에 맞는 프롬프트 생성. (지침 역할)
+        chain = create_chain(retriever, prompt)     # 검색 및 답변을 위한 RAG 체인 생성.
+        rag_with_chat = create_rag_with_chat(chain) # RAG 모델, 대화 기능을 연결한 객체 생성.
+
+        # 사용자 질문을 기반으로, RAG 모델을 실행하여 응답을 얻음. 대화 내용은 벡터DB에 저장.
+        response = realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings)
 
         print(f"답: {response}")
+        
+        speech_response = process_response_for_speech(response) # AI의 응답에서 음성 출력에 필요한 부분만 추출.
+        text_to_speech(speech_response) # 변환된 텍스트를 음성으로 출력.
