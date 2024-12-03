@@ -12,6 +12,7 @@ from langchain_core.output_parsers import StrOutputParser
 from operator import itemgetter
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.callbacks import StreamingStdOutCallbackHandler
 
 # 음성 기능 구현 라이브러리.
 import requests
@@ -20,12 +21,15 @@ from pydub import AudioSegment
 from pydub.playback import play
 import speech_recognition as sr
 
+'''
+api_key가 key.env파일에 존재.
+하지만 배포 시 key.env파일은 따로 커밋되지 않음.
+따라서 사용자의 개인 key.env파일을 생성해야함.
+'''
 # api key, env파일에서 로드.
 load_dotenv(dotenv_path='key.env')
-
 # openai
 api_key = os.getenv("OPENAI_API_KEY")
-
 # elevenlabs
 eleven_api_key = os.getenv("Elevenlabs_API_KEY")
 voice_url = os.getenv("Eleven_URL")
@@ -106,9 +110,15 @@ def create_prompt(language="Korean"):
         )
     return prompt
 
-def create_chain(retriever, prompt):
+def create_chain(retriever, prompt, api_key):
     # llm모델 gpt-4o으로 생성.
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
+    llm = ChatOpenAI(
+        api_key=api_key,
+        model="gpt-4o",
+        temperature=0.3,
+        streaming=True,
+        callbacks=[StreamingStdOutCallbackHandler()]
+        )
 
     # 체인 생성
     chain = (
@@ -208,9 +218,9 @@ def record_audio(language="ko-KR", listen_time=15, energy_threshold=300, pause_t
     recognizer.pause_threshold = pause_threshold    # 말 안해도 인식을 중단하지 않는 시간.
 
     with sr.Microphone() as source:
-        print("음성 입력 중...(입력 시간 {listen_time}초)(중지: 'Ctrl+C')")
+        print("음성 입력 중...(입력 시간 15초, 미입력시 대기 10초)(중지: 'Ctrl+C')")
         try:
-            audio = recognizer.listen(source, timeout=5, phrase_time_limit=listen_time)
+            audio = recognizer.listen(source, timeout=10, phrase_time_limit=listen_time)
             text = recognizer.recognize_google(audio, language=language)
             print(f"텍스트: {text}")
             return text
@@ -240,14 +250,14 @@ def process_response_for_speech(response):
         print(f"[오류] 응답 처리 실패: {e}")
         return response  # 실패 시 원래 응답 반환
 
-def text_to_speech(text):
+def text_to_speech(text, api_key, voice_url="https://api.elevenlabs.io/v1/text-to-speech/eVItLK1UvXctxuaRV2Oq"):
     """
     ElevenLabs TTS를 사용해 텍스트를 음성으로 변환하고 재생.
     """
     try:
         headers = {
             "Accept": "audio/mpeg",
-            "xi-api-key": eleven_api_key,
+            "xi-api-key": api_key,
             "Content-Type": "application/json",
         }
         data = {
@@ -287,7 +297,7 @@ if __name__ == "__main__":
         data = load_job_data('jobdata')
         retriever, embeddings, vectorstore = create_retriever(data)
         prompt = create_prompt(language=language)
-        chain = create_chain(retriever, prompt)
+        chain = create_chain(retriever, prompt, api_key)
         rag_with_chat = create_rag_with_chat(chain)
 
         response = realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings)
@@ -295,4 +305,4 @@ if __name__ == "__main__":
         print(f"답: {response}")
         
         speech_response = process_response_for_speech(response)
-        text_to_speech(speech_response)
+        text_to_speech(speech_response, eleven_api_key)
