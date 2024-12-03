@@ -15,6 +15,9 @@ logo_image = "image/logo_image.png"
 user_avatar = "image/logo_image.png"
 assistant_avatar = "image/assistant_avatar.png"
 
+# 채팅 기록 저장 폴더
+CHAT_HISTORY_DIR = "chat_history"
+
 # Streamlit 애플리케이션 구성
 def main():
     # Streamlit 설정
@@ -59,6 +62,13 @@ def main():
         st.session_state["session_id"] = ""
     if "ELEVENLABS_API_KEY" not in st.session_state:
         st.session_state["ELEVENLABS_API_KEY"] = ""
+
+    # 채팅 파일 목록 가져오기
+    chat_files = []
+    if os.path.exists(CHAT_HISTORY_DIR):
+        chat_files = [f for f in os.listdir(CHAT_HISTORY_DIR) if f.endswith('.txt')]
+    else:
+        st.warning(f"채팅 기록 폴더 '{CHAT_HISTORY_DIR}'가 존재하지 않습니다.")
 
     # 사이드바: 이전 채팅 세션을 불러오기 위한 인터페이스
     with st.sidebar:
@@ -105,19 +115,21 @@ def main():
             st.success("ElevenLabs API 키가 설정되었습니다.")
 
         st.markdown("---")
-        st.subheader("📂 채팅 txt 파일 불러오기")
+        st.subheader("📂 채팅 기록 불러오기")
 
-        # 파일 업로더 추가
-        uploaded_file = st.file_uploader("채팅 txt 파일을 선택하세요", type="txt")
-
-        # 파일이 업로드되면 처리
-        if uploaded_file is not None:
-            loaded_messages = load_chat_from_file(uploaded_file)
-            if loaded_messages:
-                st.session_state["messages"] = loaded_messages
-                st.success("채팅 내용을 성공적으로 불러왔습니다.")
-            else:
-                st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
+        if chat_files:
+            selected_file = st.selectbox("불러올 채팅 파일을 선택하세요", chat_files)
+            if st.button("채팅 기록 불러오기"):
+                filepath = os.path.join(CHAT_HISTORY_DIR, selected_file)
+                with open(filepath, "r", encoding="utf-8") as file:
+                    loaded_messages = load_chat_from_file(file)
+                    if loaded_messages:
+                        st.session_state["messages"] = loaded_messages
+                        st.success(f"채팅 기록 '{selected_file}'를 불러왔습니다.")
+                    else:
+                        st.error("채팅 내용을 불러오는 중 오류가 발생했습니다.")
+        else:
+            st.info("저장된 채팅 기록이 없습니다.")
 
         st.markdown("---")
         st.markdown("<p style='text-align: center;'>📩 <strong>Contact us:</strong> wriml92@knou.ac.kr</p>", unsafe_allow_html=True)
@@ -270,11 +282,18 @@ def get_openai_response(user_input):
 # 대화 내용을 파일로 저장하는 함수
 def save_chat_to_file(messages, session_id=None):
     try:
+        # 채팅 기록 폴더가 없으면 생성
+        if not os.path.exists(CHAT_HISTORY_DIR):
+            os.makedirs(CHAT_HISTORY_DIR)
+
         if session_id:
             filename = f"chat_history_{session_id}.txt"
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"chat_history_{timestamp}.txt"
+
+        # 전체 경로 설정
+        filepath = os.path.join(CHAT_HISTORY_DIR, filename)
 
         with open(filename, "w", encoding="utf-8") as file:
             for msg in messages:
@@ -282,7 +301,7 @@ def save_chat_to_file(messages, session_id=None):
                 content = msg["content"]
                 file.write(f"{role}: {content}\n")
 
-        st.success(f"채팅 내용이 {filename}에 저장되었습니다.")
+        st.success(f"채팅 내용이 {filepath}에 저장되었습니다.")
     except Exception as e:
         st.error(f"채팅 내용을 저장하는 중 오류가 발생했습니다: {str(e)}")
 
