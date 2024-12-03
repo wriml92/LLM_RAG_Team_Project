@@ -155,7 +155,7 @@ def main():
         # else:
         #     st.info("ElevenLabs API 키가 설정되어 있지 않아 음성을 재생할 수 없습니다.")
 
-    col1, col2= st.columns([0.2, 0.8])
+    col1, col2, col3 = st.columns([0.2, 0.2, 0.4])
     
     with col1:
         # 현재 대화를 저장하기 위한 버튼
@@ -170,6 +170,15 @@ def main():
     with col2:
         if st.button("음성 채팅"):
             st.info("음성 채팅 기능은 준비중입니다.")
+
+    # 세션 상태에 'refresh' 키가 없으면 초기화
+    if 'refresh' not in st.session_state:
+        st.session_state['refresh'] = False
+    
+    with col3:
+        if st.button("채팅 내역 초기화"):
+            st.session_state["messages"] = []
+            st.success("채팅 기록이 초기화되었습니다.")
 
     # 채팅 인터페이스
     for msg in st.session_state["messages"]:
