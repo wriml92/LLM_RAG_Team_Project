@@ -18,6 +18,7 @@ import requests
 from io import BytesIO
 from pydub import AudioSegment
 from pydub.playback import play
+import speech_recognition as sr
 
 # api key, env파일에서 로드.
 load_dotenv(dotenv_path='key.env')
@@ -174,7 +175,7 @@ def realtime_data_update_model(rag_with_chat, session_id, question, vectorstore,
     """
     try:
         # RAG 모델 실행
-        response = rag_with_chat.invoke({"question": question,"session_ids": session_id},config={"configurable": {"session_id": session_id}})
+        response = rag_with_chat.invoke({"question": question,"session_ids": session_id}, config={"configurable": {"session_id": session_id}})
 
         if not response:
             raise ValueError("Empty response from RAG model.")
@@ -192,14 +193,95 @@ def realtime_data_update_model(rag_with_chat, session_id, question, vectorstore,
     except Exception as e:
         print(f"[오류] RAG 모델 업데이트 실패: {e}")
         return "[오류] 대화 업데이트 실패. 다시 시도하세요."
+    
+def record_audio(language="ko-KR", listen_time=10, energy_threshold=300, pause_threshold=2.0):
+    '''
+    마이크를 통해 음성 입력을 받고 텍스트로 변환.
+    영어: en-US, en-GB 
+    일본어: ja-JP
+    중국어: zh-CN
+    불어: fr-FR
+    스페인어: es-ES
+    '''
+    recognizer = sr.Recognizer()
+    recognizer.energy_threshold = energy_threshold  # 민감도 설정
+    recognizer.pause_threshold = pause_threshold    # 말 안해도 인식을 중단하지 않는 시간.
+
+    with sr.Microphone() as source:
+        print("음성 입력 중...(입력 시간 {listen_time}초)(중지: 'Ctrl+C')")
+        try:
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=listen_time)
+            text = recognizer.recognize_google(audio, language=language)
+            print(f"텍스트: {text}")
+            return text
+        
+        except sr.UnknownValueError:
+            print("음성 인식 불가.")
+            return None
+        
+        except sr.WaitTimeoutError:
+            print("음성 입력이 감지되지 않았음. 다시 시도 요망.")
+            return None
+        
+        except sr.RequestError as e:
+            print(f"음성 서비스 오류: {e}")
+            return None
+        
+def process_response_for_speech(response):
+    """
+    AI 응답에서 음성 출력에 필요한 부분만 추출 (URL 제외).
+    """
+    try:
+        # '3. URL:' 이후 텍스트를 제거
+        if "3. URL:" in response:
+            response = response.split("3. URL:")[0].strip()
+        return response
+    except Exception as e:
+        print(f"[오류] 응답 처리 실패: {e}")
+        return response  # 실패 시 원래 응답 반환
+
+def text_to_speech(text):
+    """
+    ElevenLabs TTS를 사용해 텍스트를 음성으로 변환하고 재생.
+    """
+    try:
+        headers = {
+            "Accept": "audio/mpeg",
+            "xi-api-key": eleven_api_key,
+            "Content-Type": "application/json",
+        }
+        data = {
+            "text": text,
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": 0.3,
+                "similarity_boost": 1,
+                "style": 1,
+                "use_speaker_boost": True
+            }
+        }
+
+        response = requests.post(voice_url, headers=headers, json=data)
+        response.raise_for_status()
+
+        audio_stream = BytesIO(response.content)
+        audio = AudioSegment.from_file(audio_stream, format="mp3")
+        play(audio)
+
+    except Exception as e:
+        print(f"음성 변환 오류: {e}")
 
 # 코드 테스트용.
 if __name__ == "__main__":
     session_id = "jungseok"
-    language = input("언어 선택: ")
+    language = input("언어 선택 (ex: Korean): ")
     while True:
-        question = input("질문 입력하세요(exit 입력 시 종료): ")
-        if question == "exit":
+        print("질문 입력하세요(exit 입력 시 종료): ")
+        question = record_audio()
+        if question is None:
+            continue
+        if question.lower() in ["exit", "종료"]:
+            print("프로그램 종료.")
             break
 
         data = load_job_data('jobdata')
@@ -211,3 +293,6 @@ if __name__ == "__main__":
         response = realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings)
 
         print(f"답: {response}")
+        
+        speech_response = process_response_for_speech(response)
+        text_to_speech(speech_response)
