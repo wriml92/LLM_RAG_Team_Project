@@ -14,6 +14,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory     # �
 from operator import itemgetter                                             # 리스트나 딕셔너리에서, 데이터의 특정 키나 항목을 쉽게 가져오기 위한 유틸리티 함수.
 from langchain_core.documents import Document                               # 문서 데이터를 구조화하고 관리하기 위한 클래스를 가져옴.
 from langchain.embeddings import HuggingFaceEmbeddings                      # HuggingFace 모델 활용한 임베딩 생성 기능을 가져옴.
+from langchain.callbacks import StreamingStdOutCallbackHandler              # AI 모델의 출력 내용을 스트리밍 방식으로 실시간 출력 가능.
 
 # 음성 기능 구현 라이브러리.
 import requests                  # HTTP 요청을 보내고, 응답을 처리하기 위한 라이브러리.
@@ -22,6 +23,11 @@ from pydub import AudioSegment   # 오디오 파일을 다양한 형식으로 �
 from pydub.playback import play  # 오디오 데이터를 재생하기 위한 함수.
 import speech_recognition as sr  # 음성 인식을 통해 음성을 텍스트로 변환하는 라이브러리.
 
+'''
+api_key가 key.env파일에 존재.
+하지만 배포 시 key.env파일은 따로 커밋되지 않음.
+따라서 사용자의 개인 key.env파일을 생성해야함.
+'''
 
 # api key, env파일에서 로드.
 load_dotenv(dotenv_path='key.env')
@@ -116,12 +122,18 @@ def create_prompt(language="Korean"):
         )
     return prompt
 
-def create_chain(retriever, prompt):
+def create_chain(retriever, prompt, api_key):
     """
     데이터를 검색하고 응답을 생성하는 체인을 생성하는 함수.
     데이터 검색(retriever), 질문 처리(prompt), 모델 응답 생성(llm) 과정을 연결.
     """
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.3) # llm모델 gpt-4o으로 생성.
+    llm = ChatOpenAI(
+        api_key=api_key,
+        model="gpt-4o",
+        temperature=0.3,
+        streaming=True,
+        callbacks=[StreamingStdOutCallbackHandler()]
+        ) 
 
     # 체인 생성
     chain = (
@@ -223,11 +235,11 @@ def record_audio(language="ko-KR", listen_time=15, energy_threshold=300, pause_t
 
     # 마이크에서 음성 데이터를 수집.
     with sr.Microphone() as source:
-        print("음성 입력 중...(입력 시간 {listen_time}초)(중지: 'Ctrl+C')")
+        print("음성 입력 중...(입력 시간 15초, 미입력시 대기 10초)(중지: 'Ctrl+C')")
         try:
             # timeout : 음성 입력이 시작되지 않을 경우 대기할 시간.
             # phrase_time_limit : 전체 음성을 입력받을 최대 시간.
-            audio = recognizer.listen(source, timeout=5, phrase_time_limit=listen_time)
+            audio = recognizer.listen(source, timeout=10, phrase_time_limit=listen_time)
             text = recognizer.recognize_google(audio, language=language)    # 음성을 텍스트로 변환.
             print(f"텍스트: {text}")
             return text
@@ -258,14 +270,14 @@ def process_response_for_speech(response):
         print(f"[오류] 응답 처리 실패: {e}")
         return response  # 실패 시 로그 출력 후, 원래 응답 그대로 반환.
 
-def text_to_speech(text):
+def text_to_speech(text, api_key, voice_url="https://api.elevenlabs.io/v1/text-to-speech/eVItLK1UvXctxuaRV2Oq"):
     """
     ElevenLabs TTS를 사용해 텍스트를 음성으로 변환하고 재생.
     """
     try:
         headers = {
             "Accept": "audio/mpeg",             # 오디오 형식 지정. (audio/mpeg)
-            "xi-api-key": eleven_api_key,       # ElevenLabs API 키 인증.
+            "xi-api-key": api_key,              # ElevenLabs API 키 인증.
             "Content-Type": "application/json", # 요청 데이터 형식(JSON) 지정.
         }
         data = {
@@ -295,19 +307,26 @@ def text_to_speech(text):
 if __name__ == "__main__":
     session_id = "jungseok" #세션 ID 설정.
     language = input("언어 선택 (ex: Korean): ")    # 사용자의 언어 선택.
+    mode = input("채팅은 0, 음성은 1 선택: ")       # 사용자가 채팅 또는 음성 입력 중 하나를 선택.
     while True:
-        print("질문 입력하세요(exit 입력 시 종료): ")   # while True: 로 인해, 사용자가 'exit' 또는 '종료'를 입력할 때까지 실행.
-        question = record_audio()   # 사용자의 음성 입력을 받음.
-        if question is None:        # 음성 인식 실패 시 반복.
-            continue
-        if question.lower() in ["exit", "종료"]:
-            print("프로그램 종료.")
-            break
+        if mode == "0":     # 텍스트 기반 채팅 모드.
+            question = input("질문 입력하세요(exit 입력 시 종료): ")
+            if question == 'exit':
+                print("프로그램 종료.")
+                break
+        elif mode == "1":   # 음성 입력 모드.
+            print("질문 입력하세요(exit 입력 시 종료): ")
+            question = record_audio()   # 사용자의 음성을 녹음하고 텍스트로 변환.
+            if question is None:        # 음성 인식에 실패한 경우 루프를 재시작.
+                continue
+            if question.lower() in ["exit", "종료"]:
+                print("프로그램 종료.")
+                break
 
-        data = load_job_data('jobdata')     # 'jobdata' 파일에서 직업 관련 데이터를 불러옴.
-        retriever, embeddings, vectorstore = create_retriever(data) # 데이터에서 검색기, 임베딩, 벡터 저장소를 생성.
+        data = load_job_data('jobdata') # 'jobdata' 파일에서 직업 관련 데이터를 불러옴.
+        retriever, embeddings, vectorstore = create_retriever(data) # 데이터에서 검색기, 임베딩, 벡터 저장소를 생성
         prompt = create_prompt(language=language)   # 사용자가 선택한 언어에 맞는 프롬프트 생성. (지침 역할)
-        chain = create_chain(retriever, prompt)     # 검색 및 답변을 위한 RAG 체인 생성.
+        chain = create_chain(retriever, prompt, api_key) # 검색 및 답변을 위한 RAG 체인 생성.
         rag_with_chat = create_rag_with_chat(chain) # RAG 모델, 대화 기능을 연결한 객체 생성.
 
         # 사용자 질문을 기반으로, RAG 모델을 실행하여 응답을 얻음. 대화 내용은 벡터DB에 저장.
@@ -315,5 +334,6 @@ if __name__ == "__main__":
 
         print(f"답: {response}")
         
-        speech_response = process_response_for_speech(response) # AI의 응답에서 음성 출력에 필요한 부분만 추출.
-        text_to_speech(speech_response) # 변환된 텍스트를 음성으로 출력.
+        if mode == "1":
+            speech_response = process_response_for_speech(response) # AI의 응답에서 음성 출력에 필요한 부분만 추출.
+            text_to_speech(speech_response, eleven_api_key) # 변환된 텍스트를 음성으로 출력.
