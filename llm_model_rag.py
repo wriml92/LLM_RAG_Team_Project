@@ -8,15 +8,26 @@ from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from operator import itemgetter
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 
+# 음성 기능 구현 라이브러리.
+import requests
+from io import BytesIO
+from pydub import AudioSegment
+from pydub.playback import play
+
 # api key, env파일에서 로드.
 load_dotenv(dotenv_path='key.env')
+
+# openai
 api_key = os.getenv("OPENAI_API_KEY")
+
+# elevenlabs
+eleven_api_key = os.getenv("Elevenlabs_API_KEY")
+voice_url = os.getenv("Eleven_URL")
 
 def load_job_data(folder_path):
     '''job이라는 json 파일의 내용을 기본 문서인 document로 변형'''
@@ -54,8 +65,6 @@ def load_job_data(folder_path):
         data_2.append(doc)
     return data_2
 
-data = load_job_data('jobdata')
-
 def create_retriever(data):
     '''텍스트 정보 청킹 후에 임베딩 생성, 저장 공간인 faiss vector DB와 이를 활용해 검색기 생성.'''
     # document chunking
@@ -72,29 +81,29 @@ def create_retriever(data):
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
     return retriever, embeddings, vectorstore
 
-retriever, embeddings, vectorstore = create_retriever(data)
+def create_prompt(language="Korean"):
+    # 프롬프트 작성.
+    prompt = PromptTemplate.from_template(
+        f"""You are an expert assistant for job search and recommendation. 
+        Always provide well-structured answers in {language}, including relevant data points.
+        Avoid unnecessary elaboration.
 
-# 프롬프트 작성.
-prompt = PromptTemplate.from_template(
-    """You are an expert assistant for job search and recommendation. 
-    Always provide well-structured answers in Korean, including relevant data points.
-    Avoid unnecessary elaboration.
+        # Previous conversation history:
+        {{chat_history}}
 
-    # 이전 대화 기록:
-    {chat_history}
+        # Question:Summation
+        {{question}}
 
-    # 질문:
-    {question}
+        # Information retrieved:
+        {{info}}
 
-    # 검색된 정보:
-    {info}
-
-    # 답변:
-    # 1. 요약: [질문에 대한 간단한 요약]
-    2. 관련 정보: [추가로 제공할 수 있는 세부 정보]
-    3. URL: [관련 링크 또는 소스]
-    """
-    )
+        # Answer:
+        # 1. Summation: [질문에 대한 간단한 요약]
+        2. Related information: [추가로 제공할 수 있는 세부 정보]
+        3. URL: [관련 링크 또는 소스]
+        """
+        )
+    return prompt
 
 def create_chain(retriever, prompt):
     # llm모델 gpt-4o으로 생성.
@@ -113,8 +122,6 @@ def create_chain(retriever, prompt):
     )
 
     return chain
-
-chain = create_chain(retriever, prompt)
 
 # 대화 세션 기록
 chat = {}
@@ -137,8 +144,6 @@ def create_rag_with_chat(chain):
     )
     return rag_with_chat
 
-rag_with_chat = create_rag_with_chat(chain)
-
 def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddings):
     """
     사용자 대화 기록을 Vector DB에 추가하여 성능을 개선.
@@ -157,32 +162,52 @@ def save_chat_in_vectorstore(session_id, question, answer, vectorstore, embeddin
     # 기존 Vector DB와 병합
     vectorstore.merge_from(new_vectorstore)
 
+    '''
+    새 벡터스토어를 만드는 건 비효율적일 수 있음. merge를 활용하지 않고, 아래 코드를 활용해 기존 데이터베이스에 추가하는 방법도 사용 가능
+    vectorstore.add_documents([document], embedding=embeddings)
+    '''
+
 # 사용자 대화 내역 저장 및 성능 개선
-def realtime_data_update_model(rag_with_chat, session_id, question):
+def realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings):
     """
     RAG 체인과 사용자 대화를 관리하며 실시간으로 Vector DB 업데이트.
     """
-    # RAG 모델 실행
-    response = rag_with_chat.invoke({"question": question,"session_ids": session_id},config={"configurable": {"session_id": session_id}})
+    try:
+        # RAG 모델 실행
+        response = rag_with_chat.invoke({"question": question,"session_ids": session_id},config={"configurable": {"session_id": session_id}})
 
-    # 대화 내용 저장
-    session_history = get_session_history(session_id)
-    session_history.add_user_message(question)
-    session_history.add_ai_message(response)
+        if not response:
+            raise ValueError("Empty response from RAG model.")
+        
+        # 대화 내용 저장
+        session_history = get_session_history(session_id)
+        session_history.add_user_message(question)
+        session_history.add_ai_message(response)
 
-    # Vector DB 업데이트
-    save_chat_in_vectorstore(session_id, question, response, vectorstore, embeddings)
+        # Vector DB 업데이트
+        save_chat_in_vectorstore(session_id, question, response, vectorstore, embeddings)
 
-    return response
+        return response
+    
+    except Exception as e:
+        print(f"[오류] RAG 모델 업데이트 실패: {e}")
+        return "[오류] 대화 업데이트 실패. 다시 시도하세요."
 
 # 코드 테스트용.
 if __name__ == "__main__":
+    session_id = "jungseok"
+    language = input("언어 선택: ")
     while True:
-        session_id = "jungseok"
-        question = input("질문 입력하세요: ")
+        question = input("질문 입력하세요(exit 입력 시 종료): ")
         if question == "exit":
             break
-        
-        response = realtime_data_update_model(rag_with_chat, session_id, question)
+
+        data = load_job_data('jobdata')
+        retriever, embeddings, vectorstore = create_retriever(data)
+        prompt = create_prompt(language=language)
+        chain = create_chain(retriever, prompt)
+        rag_with_chat = create_rag_with_chat(chain)
+
+        response = realtime_data_update_model(rag_with_chat, session_id, question, vectorstore, embeddings)
 
         print(f"답: {response}")
