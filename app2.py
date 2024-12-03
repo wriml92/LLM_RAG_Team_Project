@@ -202,8 +202,25 @@ def main():
             unsafe_allow_html=True,
         )
         else:
-            with st.chat_message("assistant", avatar=assistant_avatar):
-                st.markdown(msg["content"])
+            if msg["role"] == "assistant":
+                # 어시스먼트 말풍선
+                st.markdown(
+                f"""
+                <div style="display: flex; justify-content: flex-start; align-items: center; margin: 10px 0;">
+                    <div style="
+                        background-color: #f7fcfc;
+                        color: #000;
+                        padding: 10px 15px;
+                        border-radius: 15px;
+                        max-width: 70%;
+                        text-align: left;
+                        font-size: 14px;">
+                        {msg['content']}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 # OpenAI GPT-4o API를 호출하여 사용자의 질문에 대한 응답을 생성하는 함수
 def get_openai_response(user_input):
