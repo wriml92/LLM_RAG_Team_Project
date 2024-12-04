@@ -1,0 +1,66 @@
+/* 구글 폰트 로드 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
+
+/* 배경색 변경 */
+body {
+    background-color: #f5f5f5;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 헤더 스타일 변경 */
+h1 {
+    color: #50bcdf;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* 사이드바 스타일 변경 */
+[data-testid="stSidebar"] {
+    background-color: #e0e0e0;
+}
+
+/* 입력창 스타일 */
+.stChatInput textarea {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+}
+
+/* 입력창 포커스 효과 */
+.stChatInput textarea:focus {
+    border-color: #2e8b57;
+    box-shadow: 0 0 5px rgba(46, 139, 87, 0.5);
+}
+
+/* 버튼 스타일 */
+.stButton > button {
+    background-color: #50bcdf;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* 버튼 호버 효과 */
+.stButton > button:hover {
+    background-color: #c0eced;
+    color: #ffffff;
+}
+
+/* 채팅 메시지 스타일 */
+.stChatMessage {
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+/* 사용자 메시지 */
+.stChatMessageUser {
+    background-color: #50bcdf;
+}
+
+/* 어시스턴트 메시지 */
+.stChatMessageAssistant {
+    background-color: #f1f1f1;
+}

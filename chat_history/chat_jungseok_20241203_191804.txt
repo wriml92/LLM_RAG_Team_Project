@@ -1,0 +1,39 @@
+User: 경영학과 출신인데 괜찮은 채용공고 있어?
+Assistant: 1. Summation: 경영학과 출신을 위한 다양한 채용 공고가 있습니다.
+
+2. Related information:
+   - (주)대영엔지니어링: 데이터 시각화 및 빅데이터 관련 직무, 경력 무관
+   - 주식회사 지니어스: 데이터 PM 및 퍼포먼스 마케터, 경력 5년 이상
+   - 한국장애인고용공단: 경영지원 및 SW개발 관련 훈련생 모집, 경력 무관
+
+3. URL:
+   - (주)대영엔지니어링: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49488698)
+   - 주식회사 지니어스 데이터 PM: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49469858)
+   - 주식회사 지니어스 퍼포먼스 마케터: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49491912)
+   - 한국장애인고용공단: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49423609)
+User: 이 회사들 말고 다른 회사들은 없어?
+Assistant: 1. Summation: 경영학과 출신을 위한 추가적인 채용 공고가 있습니다.
+
+2. Related information:
+   - (주)뉴로메카: 제품개발(SW) 담당자, 신입/경력 무관, 서울 성동구
+   - (주)다우기술: 경력사원 대규모 인재영입, 서울 마포구 및 경기 성남시
+   - (주)왓위케어: 소프트웨어 개발자, 경력 무관, 서울 성동구
+   - (주)아이투프럼: R&D 연구소 연구원, 경력 무관, 서울 강남구
+
+3. URL:
+   - (주)뉴로메카: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49211395)
+   - (주)왓위케어: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49487559)
+   - (주)아이투프럼: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49490000)
+User: 뉴로메카의 채용공고에 대해 자세히 알고 싶어.
+Assistant: 1. Summation: (주)뉴로메카의 채용공고에 대한 정보입니다.
+
+2. Related information:
+   - 직무: 제품개발(SW) 담당자
+   - 경력: 신입/경력 무관
+   - 위치: 서울 성동구
+   - 요구사항: 관련 전공자 및 경력자 우대
+   - 근무형태: 정규직
+   - 급여: 면접 후 결정
+
+3. URL:
+   - (주)뉴로메카 채용공고: [채용공고 링크](http://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=49211395)
